@@ -1,2 +1,2 @@
-# rag-on-rails
-Deploy ThirdAI's Rag on Rails to serve NeuralDB's on any cluster
+# NeuralDB Enterprise
+Deploy ThirdAI's NeuralDB Enterprise on any cluster in a few minutes.
