@@ -1,0 +1,61 @@
+job "modelbazaar" {
+  datacenters = ["dc1"]
+
+  type = "service"
+
+  group "modelbazaar" {
+    count = 1
+
+    network {
+       port "modelbazaar-http" {
+         to = 80
+       }
+    }
+
+    service {
+      name = "modelbazaar"
+      port = "modelbazaar-http"
+      provider = "nomad"
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.http.routers.modelbazaar-http.rule=PathPrefix(`/`)",
+        "traefik.http.routers.modelbazaar-http.priority=1"
+      ]
+    }
+
+    task "server" {
+
+      driver = "docker"
+
+      env {
+        DATABASE_URI = "postgresql://modelbazaaruser:{{ DB_PASSWORD }}@{{ PRIVATE_SERVER_IP }}:5432/modelbazaar"
+        PUBLIC_MODEL_BAZAAR_ENDPOINT = "http://{{ PUBLIC_PROXY_SERVER_IP }}/"
+        PRIVATE_MODEL_BAZAAR_ENDPOINT = "http://{{ PRIVATE_PROXY_SERVER_IP }}/"
+        LICENSE_PATH = "/model_bazaar/license/ndb_enterprise_license.json"
+        NOMAD_ENDPOINT = "http://172.17.0.1:4646/"
+        SHARE_DIR = "{{ SHARE_DIR }}"
+        JWT_SECRET = "{{ JWT_SECRET }}"
+      }
+
+      config {
+        image = "thirdaistaging.azurecr.io/model-bazaar:latest"
+        ports = ["modelbazaar-http"]
+        auth {
+          username = "NomadToken"
+          password = "2BL1rE0ECGEGQrkhF0F+i6aj3zWv/zxCIxAh+4ldB++ACRDO4Bsk"
+          server_address = "thirdaistaging.azurecr.io"
+        }
+        volumes = [
+          "/model_bazaar:/model_bazaar"
+        ]
+      }
+
+      resources {
+        cpu    = 1000
+        memory = 4000
+
+      }
+    }
+  }
+}
