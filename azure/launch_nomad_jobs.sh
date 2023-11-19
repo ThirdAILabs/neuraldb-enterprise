@@ -41,6 +41,6 @@ SHARE_DIR=$nfs_shared_dir
 DB_PASSWORD=$db_password
 
 
-python3 ./hcl_files/submit_nomad_job.py --nomad-ip $PUBLIC_PROXY_SERVER_IP --hcl-template-filename ../nomad/nomad_jobs/search_ui_job.hcl.j2 PUBLIC_PROXY_SERVER_IP=$PUBLIC_PROXY_SERVER_IP
-python3 ./hcl_files/submit_nomad_job.py --nomad-ip $PUBLIC_PROXY_SERVER_IP --hcl-template-filename ../nomad/nomad_jobs/traefik_job.hcl.j2 PRIVATE_SERVER_IP=$PRIVATE_SERVER_IP
-python3 ./hcl_files/submit_nomad_job.py --nomad-ip $PUBLIC_PROXY_SERVER_IP --hcl-template-filename ../nomad/nomad_jobs/model_bazaar_job.hcl.j2 DB_PASSWORD=$DB_PASSWORD SHARE_DIR=$SHARE_DIR PRIVATE_PROXY_SERVER_IP=$PRIVATE_PROXY_SERVER_IP PUBLIC_PROXY_SERVER_IP=$PUBLIC_PROXY_SERVER_IP PRIVATE_SERVER_IP=$PRIVATE_SERVER_IP JWT_SECRET=$jwt_secret
+python3 ../nomad/nomad_jobs/submit_nomad_job.py --nomad-ip $PUBLIC_PROXY_SERVER_IP --hcl-template-filename ../nomad/nomad_jobs/search_ui_job.hcl.j2 PUBLIC_PROXY_SERVER_IP=$PUBLIC_PROXY_SERVER_IP
+python3 ../nomad/nomad_jobs/submit_nomad_job.py --nomad-ip $PUBLIC_PROXY_SERVER_IP --hcl-template-filename ../nomad/nomad_jobs/traefik_job.hcl.j2 PRIVATE_SERVER_IP=$PRIVATE_SERVER_IP
+python3 ../nomad/nomad_jobs/submit_nomad_job.py --nomad-ip $PUBLIC_PROXY_SERVER_IP --hcl-template-filename ../nomad/nomad_jobs/model_bazaar_job.hcl.j2 DB_PASSWORD=$DB_PASSWORD SHARE_DIR=$SHARE_DIR PRIVATE_PROXY_SERVER_IP=$PRIVATE_PROXY_SERVER_IP PUBLIC_PROXY_SERVER_IP=$PUBLIC_PROXY_SERVER_IP PRIVATE_SERVER_IP=$PRIVATE_SERVER_IP JWT_SECRET=$jwt_secret
