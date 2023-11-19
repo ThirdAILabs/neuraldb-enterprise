@@ -81,11 +81,3 @@ sudo mount -t nfs $PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR
 echo "$PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR nfs rw,hard,intr 0 0" | sudo tee -a /etc/fstab
 EOF
 done
-
-# Mount the shared directory on NFS Server node
-# THIS BREAKS THE NFS SERVER AFTER 30 MINS, god knows why
-# ssh "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
-# sudo apt -y update
-# sudo apt-get install -y nfs-common
-# sudo mount -t nfs $PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR
-# EOF

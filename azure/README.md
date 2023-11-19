@@ -14,3 +14,4 @@ Spin up an Azure VM cluster and launch NeuralDB Enterprise on that cluster in mi
 
 Wait for the setup process to complete (approximately 10 minutes), and you have launched NeuralDB Enterprise on your own Azure VM cluster!
 
+In the `config.json` file in the `azure` directory, find the value for `PROXY_CLIENT_IP`. Paste the IP address into your browser, and you should see a login screen, where you can create an account, verify your email, and start training NeuralDB's!
