@@ -1,5 +1,5 @@
 # NeuralDB Enterprise
-### Deploy ThirdAI's NeuralDB Enterprise on any cluster in a few minutes.
+### Deploy ThirdAI's NeuralDB Enterprise on any cluster within a few minutes.
 
 Check out the `azure` directory to get started with NeuralDB Enterprise on Azure.
 
