@@ -6,7 +6,10 @@ subnet_name=""
 head_node_ipname=""
 admin_name=""
 db_password=""
-jwt_secret=""  # this should be a password-like string 
+jwt_secret=""  # this should be a password-like string
+admin_mail=""
+admin_password=""
+sengrid_key=""
 
 # Can change these variables if desired
 location="centralus"

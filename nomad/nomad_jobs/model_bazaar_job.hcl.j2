@@ -36,14 +36,18 @@ job "modelbazaar" {
         NOMAD_ENDPOINT = "http://172.17.0.1:4646/"
         SHARE_DIR = "{{ SHARE_DIR }}"
         JWT_SECRET = "{{ JWT_SECRET }}"
+        ADMIN_USERNAME =  "{{ ADMIN_USERNAME }}"
+        ADMIN_MAIL = "{{ ADMIN_MAIL }}"
+        ADMIN_PASSWORD = "{{ ADMIN_PASSWORD }}"
+        SENGRID_KEY = "{{ SENGRID_KEY }}"
       }
 
       config {
-        image = "thirdaistaging.azurecr.io/model-bazaar:latest"
+        image = "thirdaistaging.azurecr.io/model-bazaar-admin:latest"
         ports = ["modelbazaar-http"]
         auth {
           username = "NomadToken"
-          password = "2BL1rE0ECGEGQrkhF0F+i6aj3zWv/zxCIxAh+4ldB++ACRDO4Bsk"
+          password = "aLrPCEjCmt3EjC110IjcNGjA1lkXpkKxmsLojheDQA+ACRBTrR6W"
           server_address = "thirdaistaging.azurecr.io"
         }
         volumes = [
