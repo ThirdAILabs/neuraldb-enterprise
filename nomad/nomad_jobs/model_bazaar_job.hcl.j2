@@ -36,6 +36,9 @@ job "modelbazaar" {
         NOMAD_ENDPOINT = "http://172.17.0.1:4646/"
         SHARE_DIR = "{{ SHARE_DIR }}"
         JWT_SECRET = "{{ JWT_SECRET }}"
+        ADMIN_USERNAME =  "{{ ADMIN_USERNAME }}"
+        ADMIN_MAIL = "{{ ADMIN_MAIL }}"
+        ADMIN_PASSWORD = "{{ ADMIN_PASSWORD }}"
       }
 
       config {
