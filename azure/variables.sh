@@ -9,7 +9,6 @@ db_password=""
 jwt_secret=""  # this should be a password-like string
 admin_mail=""
 admin_password=""
-sengrid_key=""
 
 # Can change these variables if desired
 location="centralus"
