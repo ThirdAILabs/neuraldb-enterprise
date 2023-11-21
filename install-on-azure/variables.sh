@@ -18,4 +18,3 @@ vm_count=3  # vm_count must be greater than or equal to 3
 # Shouldn't change these variables
 nfs_shared_dir="/model_bazaar"
 postgresql_data_dir="/etc/postgresql/14/main"
-

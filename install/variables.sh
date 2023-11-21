@@ -9,4 +9,3 @@ admin_password="password"
 # Shouldn't change these variables
 nfs_shared_dir="/model_bazaar"
 postgresql_data_dir="/etc/postgresql/14/main"
-

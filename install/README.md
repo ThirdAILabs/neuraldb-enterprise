@@ -1,4 +1,4 @@
-# NeuralDB Enterprise for On-Prem Cluster
+# Install NeuralDB Enterprise on Any Cluster
 
 Launch NeuralDB Enterprise on your own cluster in minutes.
 
@@ -18,7 +18,7 @@ This installation assumes the following:
 2. Install `homebrew`: https://brew.sh.
 3. Install or upgrade `bash` by running `brew install bash` in the Terminal.
 4. Install `jq` by running `brew install jq` in the Terminal.
-5. Navigate into the `on-prem` directory in this repository.
+5. Navigate into the `install` directory in this repository.
 6. Edit the `variables.sh` file to reflect your desired settings. 
    - Ensure that `license_path` is set correctly to a path on your local machine.
    - Set `admin_name` to the username used to SSH into each of the nodes in your cluster
@@ -28,4 +28,4 @@ This installation assumes the following:
 
 Wait for the setup process to complete (approximately 10 minutes), and you have launched NeuralDB Enterprise on your own Azure VM cluster!
 
-In the `config.json` file in the `on-prem` directory, find the value for `PROXY_CLIENT_IP`. Paste the IP address into your browser, and you should see a login screen, where you can create an account, verify your email, and start training NeuralDB's!
+In the `config.json` file in the `install` directory, find the value for `PROXY_CLIENT_IP`. Paste the IP address into your browser, and you should see a login screen, where you can create an account, verify your email, and start training NeuralDB's!
