@@ -1,4 +1,7 @@
 # NeuralDB Enterprise
+### Obtain a NeuralDB Enterprise License
+Visit https://neuraldb-enterprise-payment-frontend.vercel.app/ to receive a license to deploy NeuralDB Enterprise on your own cluster. Enter your email and specify the size of your cluster, and a license will be emailed to you.
+
 ### Deploy ThirdAI's NeuralDB Enterprise on any cluster within a few minutes.
 
 Follow the instructions located in the `install` directory to get started with NeuralDB Enterprise on any cluster, whether it be on-prem or in the cloud
