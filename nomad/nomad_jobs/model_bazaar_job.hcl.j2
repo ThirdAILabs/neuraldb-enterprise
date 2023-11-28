@@ -39,14 +39,16 @@ job "modelbazaar" {
         ADMIN_USERNAME =  "{{ ADMIN_USERNAME }}"
         ADMIN_MAIL = "{{ ADMIN_MAIL }}"
         ADMIN_PASSWORD = "{{ ADMIN_PASSWORD }}"
+        AUTOSCALING_ENABLED = "{{ AUTOSCALING_ENABLED }}"
+        AUTOSCALER_MAX_COUNT = "{{ AUTOSCALER_MAX_COUNT }}"
       }
 
       config {
-        image = "thirdaistaging.azurecr.io/model-bazaar:latest"
+        image = "thirdaistaging.azurecr.io/test-model-bazaar:latest"
         ports = ["modelbazaar-http"]
         auth {
-          username = "NomadToken"
-          password = "FO15fMI9CxZFn8fLL45ZiphDhNAA8SBGaHjfRCZHD0+ACRBr3VLA"
+          username = "NomadToken2"
+          password = "4cYK4F6npLW5lVdf1pwPGZFlAYLMWp3nOErCxWTy1z+ACRA2Cwyy"
           server_address = "thirdaistaging.azurecr.io"
         }
         volumes = [
