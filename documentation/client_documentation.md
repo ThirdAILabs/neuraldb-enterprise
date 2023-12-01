@@ -234,7 +234,7 @@ A class representing ModelBazaar, providing functionality for managing models an
   list_models(self) -> List[dict]:
   Lists available models in the Model Bazaar.
   
-  train(self, model_name: str, docs: List[str], is_async: bool = False, base_model_identifier: str = None) -> Model:
+  train(self, model_name: str, docs: List[str], doc_type: str = "local", is_async: bool = False, base_model_identifier: str = None) -> Model:
   Initiates training for a model and returns a Model instance.
   
   await_train(self, model: Model) -> None:
@@ -357,6 +357,7 @@ Lists available models in the Model Bazaar.
 ```python
 def train(model_name: str,
           docs: List[str],
+          doc_type: str = "local",
           is_async: bool = False,
           base_model_identifier: str = None)
 ```
@@ -367,6 +368,7 @@ Initiates training for a model and returns a Model instance.
 
 - `model_name` _str_ - The name of the model.
 - `docs` _List[str]_ - A list of document paths for training.
+- `doc_type` _str_ - Specifies document location type : "local"(default), "nfs" or "s3".
 - `is_async` _bool_ - Whether training should be asynchronous (default is False).
 - `base_model_identifier` _str_ - The identifier of the base model (optional).
   
