@@ -13,10 +13,10 @@ admin_password=""
 # Can change these variables if desired
 location="centralus"
 vm_type="Standard_DS2_v2"
-vm_count=5  # vm_count must be greater than or equal to 3
+vm_count=3  # vm_count must be greater than or equal to 3
 
 # Application autoscaling parameters
-autoscaling_enabled=true
+autoscaling_enabled=false
 autoscaler_max_count=$((vm_count - 2)) # default, change according to your needs.
 
 # Shouldn't change these variables

@@ -18,9 +18,6 @@ job "traefik" {
       port  "admin" {
           static = 8080
       }
-      port  "deployments" {
-          static = 8081
-      }
     }
 
     service {
@@ -33,13 +30,12 @@ job "traefik" {
       driver = "docker"
       config {
         image = "traefik:v2.10"
-        ports = ["admin", "http", "deployments"]
+        ports = ["admin", "http"]
         args = [
           "--api.dashboard=true",
           "--api.insecure=true", ### For Test only, please do not use that in production
           "--entrypoints.web.address=:${NOMAD_PORT_http}",
           "--entrypoints.traefik.address=:${NOMAD_PORT_admin}",
-          "--entrypoints.deployments.address=:${NOMAD_PORT_deployments}",
           "--providers.nomad=true",
           "--providers.nomad.endpoint.address=http://{{ PRIVATE_SERVER_IP }}:4646" ### IP to your nomad server 
         ]
