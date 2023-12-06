@@ -7,12 +7,8 @@ fi
 PUBLIC_HEAD_IP=$(az vm list-ip-addresses --resource-group $resource_group_name --query "[?virtualMachine.name=='Head'].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
 jq --arg head_ip "$PUBLIC_HEAD_IP" '.HEADNODE_IP += [$head_ip]' config.json > temp.json && mv temp.json config.json
 
-# Node1 automatically becomes the Proxy Server Node/Proxy Client Node
-PROXY_CLIENT_IP=$(az vm list-ip-addresses --resource-group $resource_group_name --query "[?virtualMachine.name=='Node1'].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
-jq --arg head_ip "$PROXY_CLIENT_IP" '.PROXY_CLIENT_IP += [$head_ip]' config.json > temp.json && mv temp.json config.json
-
 # Loop through client nodes to fetch their IPs
-for ((i=2; i<=$vm_count; i++))
+for ((i=1; i<=$vm_count; i++))
 do
   CLIENT_NODE_IP=$(az vm list-ip-addresses --resource-group $resource_group_name --query "[?virtualMachine.name=='Node$i'].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
   jq --arg client_ip "$CLIENT_NODE_IP" '.CLIENTNODE_IP += [$client_ip]' config.json > temp.json && mv temp.json config.json
@@ -22,12 +18,8 @@ done
 PRIVATE_HEAD_IP=$(az vm list-ip-addresses --resource-group $resource_group_name --query "[?virtualMachine.name=='Head'].virtualMachine.network.privateIpAddresses[0]" -o tsv)
 jq --arg head_ip "$PRIVATE_HEAD_IP" '.PRIVATE_HEADNODE_IP += [$head_ip]' config.json > temp.json && mv temp.json config.json
 
-# Node1 automatically becomes the Proxy Server Node/Proxy Client Node
-PRIVATE_PROXY_CLIENT_IP=$(az vm list-ip-addresses --resource-group $resource_group_name --query "[?virtualMachine.name=='Node1'].virtualMachine.network.privateIpAddresses[0]" -o tsv)
-jq --arg head_ip "$PRIVATE_PROXY_CLIENT_IP" '.PRIVATE_PROXY_CLIENT_IP += [$head_ip]' config.json > temp.json && mv temp.json config.json
-
 # Loop through client nodes to fetch their private IPs
-for ((i=2; i<=$vm_count; i++))
+for ((i=1; i<=$vm_count; i++))
 do
   PRIVATE_CLIENT_NODE_IP=$(az vm list-ip-addresses --resource-group $resource_group_name --query "[?virtualMachine.name=='Node$i'].virtualMachine.network.privateIpAddresses[0]" -o tsv)
   jq --arg client_ip "$PRIVATE_CLIENT_NODE_IP" '.PRIVATE_CLIENTNODE_IP += [$client_ip]' config.json > temp.json && mv temp.json config.json

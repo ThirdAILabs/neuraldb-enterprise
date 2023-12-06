@@ -4,7 +4,7 @@ PUBLIC_NFS_IPS=()
 
 json=$(<config.json)
 
-nodes=("HEADNODE_IP" "PROXY_CLIENT_IP" "CLIENTNODE_IP")
+nodes=("HEADNODE_IP" "CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))

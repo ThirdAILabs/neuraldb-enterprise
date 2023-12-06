@@ -30,8 +30,8 @@ job "modelbazaar" {
 
       env {
         DATABASE_URI = "postgresql://modelbazaaruser:{{ DB_PASSWORD }}@{{ PRIVATE_SERVER_IP }}:5432/modelbazaar"
-        PUBLIC_MODEL_BAZAAR_ENDPOINT = "http://{{ PUBLIC_PROXY_SERVER_IP }}/"
-        PRIVATE_MODEL_BAZAAR_ENDPOINT = "http://{{ PRIVATE_PROXY_SERVER_IP }}/"
+        PUBLIC_MODEL_BAZAAR_ENDPOINT = "http://{{ PUBLIC_SERVER_IP }}/"
+        PRIVATE_MODEL_BAZAAR_ENDPOINT = "http://{{ PRIVATE_SERVER_IP }}/"
         LICENSE_PATH = "/model_bazaar/license/ndb_enterprise_license.json"
         NOMAD_ENDPOINT = "http://172.17.0.1:4646/"
         SHARE_DIR = "{{ SHARE_DIR }}"

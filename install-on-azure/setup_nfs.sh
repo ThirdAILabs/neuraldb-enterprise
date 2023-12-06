@@ -4,7 +4,7 @@ PUBLIC_NFS_IPS=()
 
 json=$(<config.json)
 
-nodes=("HEADNODE_IP" "PROXY_CLIENT_IP" "CLIENTNODE_IP")
+nodes=("HEADNODE_IP" "CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
@@ -18,7 +18,7 @@ PRIVATE_NFS_IPS=()
 
 json=$(<config.json)
 
-nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_PROXY_CLIENT_IP" "PRIVATE_CLIENTNODE_IP")
+nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
@@ -48,10 +48,10 @@ if [ ! -d "$SHARED_DIR" ]; then
     sudo mkdir -p "$SHARED_DIR"
     sudo chmod 777 $SHARED_DIR
     sudo chmod g+s $SHARED_DIR
-    sudo mkdir -p "$SHARED_DIR/license"
-    sudo mkdir -p "$SHARED_DIR/models"
-    sudo mkdir -p "$SHARED_DIR/data"
-    sudo mkdir -p "$SHARED_DIR/users"
+    mkdir -p "$SHARED_DIR/license"
+    mkdir -p "$SHARED_DIR/models"
+    mkdir -p "$SHARED_DIR/data"
+    mkdir -p "$SHARED_DIR/users"
 fi
 # Add NFS client IPs to /etc/exports
 for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
