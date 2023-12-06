@@ -14,5 +14,6 @@ for node in "${nodes[@]}"; do
 done
 
 PUBLIC_NFS_CLIENT_IP="${PUBLIC_NFS_IPS[1]}"
+USERNAME=$admin_name
 
 scp $license_path "$USERNAME"@$PUBLIC_NFS_CLIENT_IP:/model_bazaar/license/
