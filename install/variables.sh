@@ -8,7 +8,7 @@ admin_password="password"
 
 # Application autoscaling parameters
 autoscaling_enabled=false
-autoscaler_max_count=$vm_count
+autoscaler_max_count=1
 
 # Shouldn't change these variables
 nfs_shared_dir="/model_bazaar"
