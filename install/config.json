@@ -5,12 +5,6 @@
   "PRIVATE_HEADNODE_IP": [
     "10.10.10.10"
   ],
-  "PROXY_CLIENT_IP": [
-    "22.22.22.22"
-  ],
-  "PRIVATE_PROXY_CLIENT_IP": [
-    "20.20.20.20"
-  ],
   "CLIENTNODE_IP": [
     "33.33.33.33",
     "44.44.44.44"
@@ -18,5 +12,5 @@
   "PRIVATE_CLIENTNODE_IP": [
     "30.30.30.30",
     "40.40.40.40"
-  ],
+  ]
 }

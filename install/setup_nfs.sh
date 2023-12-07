@@ -4,7 +4,7 @@ PUBLIC_NFS_IPS=()
 
 json=$(<config.json)
 
-nodes=("HEADNODE_IP" "PROXY_CLIENT_IP" "CLIENTNODE_IP")
+nodes=("HEADNODE_IP" "CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
@@ -18,7 +18,7 @@ PRIVATE_NFS_IPS=()
 
 json=$(<config.json)
 
-nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_PROXY_CLIENT_IP" "PRIVATE_CLIENTNODE_IP")
+nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
@@ -43,23 +43,23 @@ USERNAME=$admin_name
 ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
 sudo apt update
 sudo apt install -y nfs-kernel-server
-sudo groupadd -g 4646 nomad_nfs
-sudo useradd -u 4646 -g 4646 nomad_nfs
 if [ ! -d "$SHARED_DIR" ]; then
     echo "Creating shared directory: $SHARED_DIR"
     sudo mkdir -p "$SHARED_DIR"
-    sudo mkdir -p "$SHARED_DIR/license"
-    sudo mkdir -p "$SHARED_DIR/models"
-    sudo mkdir -p "$SHARED_DIR/data"
-    sudo mkdir -p "$SHARED_DIR/users"
+    sudo chmod 777 $SHARED_DIR
+    sudo groupadd -g 4646 nomad_nfs
+    sudo useradd -u 4646 -g 4646 nomad_nfs
+    sudo chown :4646 $SHARED_DIR
+    sudo chmod g+s $SHARED_DIR
+    mkdir -p "$SHARED_DIR/license"
+    mkdir -p "$SHARED_DIR/models"
+    mkdir -p "$SHARED_DIR/data"
+    mkdir -p "$SHARED_DIR/users"
 fi
 # Add NFS client IPs to /etc/exports
 for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
     echo "$SHARED_DIR \$CLIENT_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)" | sudo tee -a /etc/exports
 done
-# echo "$SHARED_DIR $PRIVATE_NFS_SERVER_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)" | sudo tee -a /etc/exports
-sudo chown -R 4646:4646 $SHARED_DIR
-sudo chmod 777 $SHARED_DIR
 sudo exportfs -ra
 sudo systemctl start nfs-kernel-server
 sudo systemctl enable nfs-kernel-server

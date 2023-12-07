@@ -1,6 +1,6 @@
 echo "JOB STARTED"
 
-git clone https://github.com/ThirdAILabs/neuraldb-enterprise.git
+git clone -b single-machine https://github.com/ThirdAILabs/neuraldb-enterprise.git
 
 cd neuraldb-enterprise/
 

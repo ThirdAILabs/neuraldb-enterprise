@@ -14,4 +14,7 @@ Spin up an Azure VM cluster and launch NeuralDB Enterprise on that cluster in mi
 
 Wait for the setup process to complete (approximately 10 minutes), and you have launched NeuralDB Enterprise on your own Azure VM cluster!
 
-In the `config.json` file in the `install-on-azure` directory, find the value for `PROXY_CLIENT_IP`. Paste the IP address into your browser, and you should see a login screen, where you can create an account, verify your email, and start training NeuralDB's!
+In the `config.json` file in the `install-on-azure` directory, find the value for `HEADNODE_IP`. Paste the IP address into your browser, and you should see a login screen, where you can create an account, verify your email, and start training NeuralDB's!
+
+Note that all the nodes' IP's are exposed to the public internet. Therefore, ensure that network security precautions are taken before uploading sensitive files to this instance of NeuralDB Enterprise. The network settings can be changed in the `create_vms.sh` file if you wish to launch on a VPC.
+We will also be introducing user-friendly features shortly that will enable the deployment of NeuralDB Enterprise within a private VPC on Azure.

@@ -6,6 +6,9 @@ jwt_secret="1234"  # this should be a password-like string
 admin_mail="admin@mail.com"
 admin_password="password"
 
+# Application autoscaling parameters
+autoscaling_enabled=false
+autoscaler_max_count=$vm_count
+
 # Shouldn't change these variables
 nfs_shared_dir="/model_bazaar"
-postgresql_data_dir="/etc/postgresql/14/main"

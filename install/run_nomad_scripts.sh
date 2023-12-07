@@ -1,11 +1,11 @@
 #!/bin/bash
 
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <client|server|proxy_server>"
+    echo "Usage: $0 <client|server>"
     exit 1
 fi
 
-declare -A config_map=( ["client"]="CLIENTNODE_IP" ["server"]="HEADNODE_IP" ["proxy_server"]="PROXY_CLIENT_IP" )
+declare -A config_map=( ["client"]="CLIENTNODE_IP" ["server"]="HEADNODE_IP" )
 
 json=$(<config.json)
 
