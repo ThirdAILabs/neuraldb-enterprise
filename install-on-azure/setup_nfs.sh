@@ -47,6 +47,9 @@ if [ ! -d "$SHARED_DIR" ]; then
     echo "Creating shared directory: $SHARED_DIR"
     sudo mkdir -p "$SHARED_DIR"
     sudo chmod 777 $SHARED_DIR
+    sudo groupadd -g 4646 nomad_nfs
+    sudo useradd -u 4646 -g 4646 nomad_nfs
+    sudo chown :4646 $SHARED_DIR
     sudo chmod g+s $SHARED_DIR
     mkdir -p "$SHARED_DIR/license"
     mkdir -p "$SHARED_DIR/models"
@@ -55,7 +58,7 @@ if [ ! -d "$SHARED_DIR" ]; then
 fi
 # Add NFS client IPs to /etc/exports
 for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
-    echo "$SHARED_DIR \$CLIENT_IP(rw,sync,no_subtree_check)" | sudo tee -a /etc/exports
+    echo "$SHARED_DIR \$CLIENT_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)" | sudo tee -a /etc/exports
 done
 sudo exportfs -ra
 sudo systemctl start nfs-kernel-server
