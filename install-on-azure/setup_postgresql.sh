@@ -53,6 +53,7 @@ sudo systemctl enable postgresql
 POSTGRESQL_DATA_DIR=\$(dirname "\$(sudo -u postgres psql -c "SHOW config_file;" -tA)")
 sudo sed -i 's/#listen_addresses = '\''localhost'\''/listen_addresses = '\''*'\''/g' "\$POSTGRESQL_DATA_DIR/postgresql.conf"
 # Configure pg_hba.conf to allow connections from cluster nodes
+echo "host  all all 172.17.0.0/16  md5" | sudo tee -a "\$POSTGRESQL_DATA_DIR/pg_hba.conf"
 for IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
     echo "host  all all \$IP/32  md5" | sudo tee -a "\$POSTGRESQL_DATA_DIR/pg_hba.conf"
 done
