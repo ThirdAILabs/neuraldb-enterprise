@@ -7,6 +7,7 @@ This installation assumes the following:
 - Your current machine has SSH access to each node in the cluster through their public IPs, and your public key is an accepted host on every node
 - Every node can pull from the internet
 - Every node can access any other node in the cluster through the nodes' private IPs
+- Every node has at least 8GB of memory and 1 CPU
 
 ### Instructions for MacOS
 1. Populate `config.json` with the IPs of the nodes in your cluster
