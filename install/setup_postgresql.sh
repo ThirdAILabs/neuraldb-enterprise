@@ -4,7 +4,7 @@ PUBLIC_NFS_IPS=()
 
 json=$(<config.json)
 
-nodes=("HEADNODE_IP" "PROXY_CLIENT_IP" "CLIENTNODE_IP")
+nodes=("HEADNODE_IP" "CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
@@ -18,7 +18,7 @@ PRIVATE_NFS_IPS=()
 
 json=$(<config.json)
 
-nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_PROXY_CLIENT_IP" "PRIVATE_CLIENTNODE_IP")
+nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
@@ -37,8 +37,6 @@ PUBLIC_NFS_CLIENT_IPS=("${PUBLIC_NFS_IPS[@]:1}")
 PRIVATE_NFS_CLIENT_IPS=("${PRIVATE_NFS_IPS[@]:1}")
 
 # PostgreSQL Configuration
-# TODO: POSTGRESQL_DATA_DIR is hardcoded, should be retrieved by using "psql -d postgres -c "SHOW hba_file;" | grep /" after logging into postgres user
-POSTGRESQL_DATA_DIR=$postgresql_data_dir
 PASSWORD=$db_password
 
 # SSH creds
@@ -52,10 +50,12 @@ sudo apt install -y postgresql postgresql-contrib
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
 # Update PostgreSQL configuration
-sudo sed -i 's/#listen_addresses = '\''localhost'\''/listen_addresses = '\''*'\''/g' "$POSTGRESQL_DATA_DIR/postgresql.conf"
+POSTGRESQL_DATA_DIR=\$(dirname "\$(sudo -u postgres psql -c "SHOW config_file;" -tA)")
+sudo sed -i 's/#listen_addresses = '\''localhost'\''/listen_addresses = '\''*'\''/g' "\$POSTGRESQL_DATA_DIR/postgresql.conf"
 # Configure pg_hba.conf to allow connections from cluster nodes
+echo "host  all all 172.17.0.0/16  md5" | sudo tee -a "\$POSTGRESQL_DATA_DIR/pg_hba.conf"
 for IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
-    echo "host  all all \$IP/32  md5" | sudo tee -a "$POSTGRESQL_DATA_DIR/pg_hba.conf"
+    echo "host  all all \$IP/32  md5" | sudo tee -a "\$POSTGRESQL_DATA_DIR/pg_hba.conf"
 done
 # Restart PostgreSQL to apply the configuration
 sudo systemctl restart postgresql

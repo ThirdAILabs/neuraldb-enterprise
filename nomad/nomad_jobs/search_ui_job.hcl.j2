@@ -29,7 +29,7 @@ job "search-ui" {
       driver = "docker"
 
       env {
-        REACT_APP_MODEL_BAZAAR_URL = "http://{{ PUBLIC_PROXY_SERVER_IP }}"
+        REACT_APP_MODEL_BAZAAR_URL = "http://{{ PUBLIC_SERVER_IP }}"
       }
 
       config {

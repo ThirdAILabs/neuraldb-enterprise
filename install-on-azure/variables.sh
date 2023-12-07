@@ -12,13 +12,12 @@ admin_password=""
 
 # Can change these variables if desired
 location="centralus"
-vm_type="Standard_DS2_v2"
-vm_count=3  # vm_count must be greater than or equal to 3
+vm_type="Standard_B4ms"
+vm_count=3  # vm_count must be greater than or equal to 0
 
 # Application autoscaling parameters
 autoscaling_enabled=false
-autoscaler_max_count=$((vm_count - 2)) # default, change according to your needs.
+autoscaler_max_count=$vm_count # default, change according to your needs.
 
 # Shouldn't change these variables
 nfs_shared_dir="/model_bazaar"
-postgresql_data_dir="/etc/postgresql/14/main"

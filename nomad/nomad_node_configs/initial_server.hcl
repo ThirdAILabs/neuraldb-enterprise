@@ -7,5 +7,15 @@ server {
 }
 
 client {
-  enabled = false
+  enabled = true
+  node_class = "web_ingress"
+  servers = ["127.0.0.1"]
+}
+
+plugin "docker" {
+  config {
+    volumes {
+      enabled = true
+    }
+  }
 }

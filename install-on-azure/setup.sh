@@ -20,10 +20,9 @@ source setup_postgresql.sh
 
 # Once we have written the IPs of the VMs to the json files, there are two things left to be done
 # 1. Setup Nomad on each of the nodes
-# 2. Setup server, client, and the proxy_server
+# 2. Setup server and clients
 
 source run_nomad_scripts.sh server
-source run_nomad_scripts.sh proxy_server
 source run_nomad_scripts.sh client
 
 # Now we can launch the Model Bazaar jobs onto our nomad cluster 
