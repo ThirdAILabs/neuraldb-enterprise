@@ -60,10 +60,10 @@ fi
 for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
     export_line="$SHARED_DIR \$CLIENT_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"
     if ! grep -qF -- "\$export_line" /etc/exports; then
-        echo "Adding NFS export for $CLIENT_IP"
-        echo "$export_line" | sudo tee -a /etc/exports
+        echo "Adding NFS export for \$CLIENT_IP"
+        echo "\$export_line" | sudo tee -a /etc/exports
     else
-        echo "NFS export for $CLIENT_IP already exists"
+        echo "NFS export for \$CLIENT_IP already exists"
     fi
 done
 sudo exportfs -ra
@@ -72,6 +72,7 @@ sudo systemctl enable nfs-kernel-server
 # Adjust firewall settings if needed
 # sudo ufw allow from $NFS_CLIENT_IP to any port nfs
 EOF
+
 
 # Mount the shared directory on NFS Client nodes
 for CLIENT_IP in "${PUBLIC_NFS_CLIENT_IPS[@]}"; do
@@ -86,10 +87,10 @@ sudo mount -t nfs $PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR
 # Add an entry to /etc/fstab for automatic mounting on boot, if needed
 export_line="$PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR nfs rw,hard,intr 0 0"
 if ! grep -qF -- "\$export_line" /etc/fstab; then
-    echo "Adding NFS mount for $PRIVATE_NFS_SERVER_IP"
-    echo "$export_line" | sudo tee -a /etc/fstab
+    echo "Adding NFS mount for $CLIENT_IP"
+    echo "\$export_line" | sudo tee -a /etc/fstab
 else
-    echo "NFS mount for $PRIVATE_NFS_SERVER_IP already exists"
+    echo "NFS mount for $CLIENT_IP already exists"
 fi
 EOF
 done
