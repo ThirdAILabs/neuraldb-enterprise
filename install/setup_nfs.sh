@@ -47,8 +47,8 @@ if [ ! -d "$SHARED_DIR" ]; then
     echo "Creating shared directory: $SHARED_DIR"
     sudo mkdir -p "$SHARED_DIR"
     sudo chmod 777 $SHARED_DIR
-    sudo groupadd -g 4646 nomad_nfs
-    sudo useradd -u 4646 -g 4646 nomad_nfs
+    sudo groupadd -g 4646 nomad_nfs || true
+    sudo useradd -u 4646 -g 4646 nomad_nfs || true
     sudo chown :4646 $SHARED_DIR
     sudo chmod g+s $SHARED_DIR
     mkdir -p "$SHARED_DIR/license"
@@ -58,7 +58,13 @@ if [ ! -d "$SHARED_DIR" ]; then
 fi
 # Add NFS client IPs to /etc/exports
 for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
-    echo "$SHARED_DIR \$CLIENT_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)" | sudo tee -a /etc/exports
+    export_line="$SHARED_DIR \$CLIENT_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"
+    if ! grep -qF -- "\$export_line" /etc/exports; then
+        echo "Adding NFS export for $CLIENT_IP"
+        echo "$export_line" | sudo tee -a /etc/exports
+    else
+        echo "NFS export for $CLIENT_IP already exists"
+    fi
 done
 sudo exportfs -ra
 sudo systemctl start nfs-kernel-server
@@ -78,6 +84,12 @@ if [ ! -d "$SHARED_DIR" ]; then
 fi
 sudo mount -t nfs $PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR
 # Add an entry to /etc/fstab for automatic mounting on boot, if needed
-echo "$PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR nfs rw,hard,intr 0 0" | sudo tee -a /etc/fstab
+export_line="$PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR nfs rw,hard,intr 0 0"
+if ! grep -qF -- "\$export_line" /etc/fstab; then
+    echo "Adding NFS mount for $PRIVATE_NFS_SERVER_IP"
+    echo "$export_line" | sudo tee -a /etc/fstab
+else
+    echo "NFS mount for $PRIVATE_NFS_SERVER_IP already exists"
+fi
 EOF
 done

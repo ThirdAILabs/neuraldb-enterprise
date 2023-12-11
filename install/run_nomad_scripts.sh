@@ -24,8 +24,10 @@ echo $private_headnode_ip
 for ip in $ips; do
   conf=$1
   echo "Setting Up Nomad And Other Dependencies on the ip $ip"
-  cat setupNomad.sh | ssh -o StrictHostKeyChecking=no $admin_name@$ip "bash"
+  cat setup_nomad.sh | ssh -o StrictHostKeyChecking=no $admin_name@$ip "bash"
 
   echo "Running $conf on the ip $ip"
-  ssh -o StrictHostKeyChecking=no $admin_name@$ip "tmux new-session -d -s nomadServer 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_server.sh $conf $private_headnode_ip > head.log 2> head.err'"
+  ssh -o StrictHostKeyChecking=no $admin_name@$ip "\
+    tmux has-session -t nomadServer 2>/dev/null && tmux kill-session -t nomadServer; \
+    tmux new-session -d -s nomadServer 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_server.sh $conf $private_headnode_ip > head.log 2> head.err'"
 done

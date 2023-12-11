@@ -16,16 +16,15 @@ This installation assumes the following:
    - Public IP requirements: they should be accessible to the machine you are setting up NeuralDB Enterprise with. They don't necessarily have to be exposed to the public internet, but they should be exposed to the network where you expect users to interact with NeuralDB Enterprise from.
    - Private IP requirements: they should be accessible to all the nodes in the cluster. This is the IP that will be used by every node to communicate with each other. This can technically be the same as the public IP.
 2. The following steps should be executed in a bash shell on the machine you with to launch NeuralDB Enterprise with. This can be any machine (e.g. laptop, VM, etc.)
-3. Make sure to have Python 3.X on your machine, and that it can be called from the terminal using `python`
-4. Install `homebrew`: https://brew.sh.
-5. Install or upgrade `bash` by running `brew install bash` in the Terminal.
-6. Install `jq` by running `brew install jq` in the Terminal.
-7. Navigate into the `install` directory in this repository.
-8. Edit the `variables.sh` file to reflect your desired settings. 
+3. Install `homebrew`: https://brew.sh.
+4. Install or upgrade `bash` by running `brew install bash` in the Terminal.
+5. Install `jq` by running `brew install jq` in the Terminal.
+6. Navigate into the `install` directory in this repository.
+7. Edit the `variables.sh` file to reflect your desired settings. 
    - Ensure that `license_path` is set correctly to a path on your machine. This should point to the NeuralDB Enterprise License that you recieved in an email.
    - Set `admin_name` to the username used to SSH into each of the nodes in your cluster
    - `admin_mail` and `admin_password` will be your login information to NeuralDB Enterprise
-9. Run `bash setup.sh` in the Terminal.
+8. Run `bash setup.sh` in the Terminal.
 
 Wait for the setup process to complete (approximately 10 minutes), and you have launched NeuralDB Enterprise on your own Azure VM cluster!
 

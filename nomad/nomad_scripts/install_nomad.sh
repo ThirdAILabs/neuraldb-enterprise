@@ -22,6 +22,11 @@ else
 fi
 
 
-wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update && sudo apt install nomad="1.6.2-1"
+keyring_file="/usr/share/keyrings/hashicorp-archive-keyring.gpg"
+if [ -f "$keyring_file" ]; then
+    # Remove the existing keyring file to avoid the prompt
+    sudo rm "$keyring_file"
+fi
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o "$keyring_file"
+echo "deb [signed-by=$keyring_file] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt-get update && sudo apt-get install -y nomad="1.6.2-1"

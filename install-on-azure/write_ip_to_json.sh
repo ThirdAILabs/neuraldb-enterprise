@@ -1,3 +1,5 @@
+#!/bin/bash
+
 rm config.json
 if [ ! -f "config.json" ]; then
   echo '{"HEADNODE_IP": [], "CLIENTNODE_IP": [], "PRIVATE_HEADNODE_IP": [], "PRIVATE_CLIENTNODE_IP": []}' > config.json
