@@ -52,7 +52,7 @@ job "modelbazaar" {
           server_address = "thirdaistaging.azurecr.io"
         }
         volumes = [
-          "/model_bazaar:/model_bazaar"
+          "{{ SHARE_DIR }}:/model_bazaar"
         ]
       }
 

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Should change these variables
 license_path="path/to/ndb_enterprise_license.json"  # license file must be named ndb_enterprise_license.json
 admin_name="admin"
@@ -11,4 +13,5 @@ autoscaling_enabled=false
 autoscaler_max_count=1
 
 # Shouldn't change these variables
-nfs_shared_dir="/model_bazaar"
+nfs_shared_dir="/opt/neuraldb_enterprise/model_bazaar"
+database_dir="/opt/neuraldb_enterprise/database"

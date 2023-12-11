@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PUBLIC_NFS_IPS=()
+PUBLIC_IPS=()
 
 json=$(<config.json)
 
@@ -9,12 +9,12 @@ for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
     for ip in "${ips[@]}"; do
-        PUBLIC_NFS_IPS+=("$ip")
+        PUBLIC_IPS+=("$ip")
     done
 done
 
 
-PRIVATE_NFS_IPS=()
+PRIVATE_IPS=()
 
 json=$(<config.json)
 
@@ -23,63 +23,58 @@ for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
     for ip in "${ips[@]}"; do
-        PRIVATE_NFS_IPS+=("$ip")
+        PRIVATE_IPS+=("$ip")
     done
 done
 
 # NFS Server Configuration
-PUBLIC_NFS_SERVER_IP="${PUBLIC_NFS_IPS[0]}"
-PRIVATE_NFS_SERVER_IP="${PRIVATE_NFS_IPS[0]}"
+PUBLIC_SERVER_IP="${PUBLIC_IPS[0]}"
+PRIVATE_SERVER_IP="${PRIVATE_IPS[0]}"
 
 
 # Array of NFS Client IPs
-PUBLIC_NFS_CLIENT_IPS=("${PUBLIC_NFS_IPS[@]:1}")
-PRIVATE_NFS_CLIENT_IPS=("${PRIVATE_NFS_IPS[@]:1}")
+PUBLIC_CLIENT_IPS=("${PUBLIC_IPS[@]:1}")
+PRIVATE_CLIENT_IPS=("${PRIVATE_IPS[@]:1}")
 
 # PostgreSQL Configuration
+DATABASE_DIR=$database_dir
 PASSWORD=$db_password
 
 # SSH creds
 USERNAME=$admin_name
 
-ssh "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
-# Update and install PostgreSQL
-sudo apt update
-sudo apt install -y postgresql postgresql-contrib
-# Start and enable PostgreSQL
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-# Update PostgreSQL configuration
-POSTGRESQL_DATA_DIR=\$(dirname "\$(sudo -u postgres psql -c "SHOW config_file;" -tA)")
-sudo sed -i 's/#listen_addresses = '\''localhost'\''/listen_addresses = '\''*'\''/g' "\$POSTGRESQL_DATA_DIR/postgresql.conf"
-# Configure pg_hba.conf to allow connections from cluster nodes
-echo "host  all all 172.17.0.0/16  md5" | sudo tee -a "\$POSTGRESQL_DATA_DIR/pg_hba.conf"
-for IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
-    echo "host  all all \$IP/32  md5" | sudo tee -a "\$POSTGRESQL_DATA_DIR/pg_hba.conf"
-done
-# Restart PostgreSQL to apply the configuration
-sudo systemctl restart postgresql
-sudo systemctl enable postgresql
-# Switch to the postgres user to create the database and user
-sudo -i -u postgres
-# Create a database
-psql -c "CREATE DATABASE modelbazaar;"
-# Create a user and grant privileges
-psql -c "CREATE ROLE modelbazaaruser WITH LOGIN ENCRYPTED PASSWORD '$PASSWORD';"
-psql -c "GRANT CONNECT ON DATABASE modelbazaar TO modelbazaaruser;"
-psql -c "GRANT ALL PRIVILEGES ON DATABASE modelbazaar TO modelbazaaruser;"
-# Exit the PostgreSQL shell and return to the user shell
-exit
+ssh "$USERNAME"@$PUBLIC_SERVER_IP <<EOF
+set -e
+
+sudo mkdir -p $DATABASE_DIR/docker-postgres-init
+sudo mkdir -p $DATABASE_DIR/data
+cd $DATABASE_DIR/docker-postgres-init
+
+sudo tee init-db.sh > /dev/null <<'EOD'
+#!/bin/bash
+{
+    echo "host  all all 172.17.0.0/16  md5"
+    for IP in ${PRIVATE_CLIENT_IPS[@]}; do
+        echo "host  all all \$IP/32  md5"
+    done
+} >> "\$PGDATA/pg_hba.conf"
+EOD
+
+sudo chmod +x init-db.sh
+
+sudo docker pull postgres
+
+sudo docker stop neuraldb-enterprise-database || true
+sudo docker rm neuraldb-enterprise-database || true
+
+sudo docker run -d \
+  --name neuraldb-enterprise-database \
+  -e POSTGRES_PASSWORD=$PASSWORD \
+  -e POSTGRES_DB=modelbazaar \
+  -e POSTGRES_USER=modelbazaaruser \
+  -v $DATABASE_DIR/docker-postgres-init:/docker-entrypoint-initdb.d \
+  -v $DATABASE_DIR/data:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  postgres
+
 EOF
-
-# Install postgresql client package on client nodes
-for CLIENT_IP in "${PUBLIC_NFS_CLIENT_IPS[@]}"; do
-    ssh "$USERNAME"@$CLIENT_IP <<EOF
-sudo apt -y update
-sudo apt install -y postgresql-client-common
-sudo apt-get install -y postgresql-client
-EOF
-done
-
-
-

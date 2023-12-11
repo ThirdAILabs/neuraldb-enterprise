@@ -15,5 +15,7 @@ done
 
 PUBLIC_NFS_SERVER_IP="${PUBLIC_NFS_IPS[0]}"
 USERNAME=$admin_name
+NFS_SHARED_DIR=$nfs_shared_dir
 
-scp $license_path "$USERNAME"@$PUBLIC_NFS_SERVER_IP:/model_bazaar/license/
+
+scp $license_path "$USERNAME"@$PUBLIC_NFS_SERVER_IP:$NFS_SHARED_DIR/license
