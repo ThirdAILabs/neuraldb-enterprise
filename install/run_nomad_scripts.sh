@@ -29,5 +29,5 @@ for ip in $ips; do
   echo "Running $conf on the ip $ip"
   ssh -o StrictHostKeyChecking=no $admin_name@$ip "\
     tmux has-session -t nomadServer 2>/dev/null && tmux kill-session -t nomadServer; \
-    tmux new-session -d -s nomadServer 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_server.sh $conf $private_headnode_ip > head.log 2> head.err'"
+    tmux new-session -d -s nomadServer 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_server.sh $conf $private_headnode_ip $ip > head.log 2> head.err'"
 done

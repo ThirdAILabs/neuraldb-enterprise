@@ -49,8 +49,8 @@ if [ ! -d "$SHARED_DIR" ]; then
     sudo chmod 777 $SHARED_DIR
     sudo groupadd -g 4646 nomad_nfs || true
     sudo useradd -u 4646 -g 4646 nomad_nfs || true
-    sudo chown :4646 $SHARED_DIR
-    sudo chmod g+s $SHARED_DIR
+    sudo chown -R 4646:4646 $SHARED_DIR
+    sudo chmod -R g+s $SHARED_DIR
     mkdir -p "$SHARED_DIR/license"
     mkdir -p "$SHARED_DIR/models"
     mkdir -p "$SHARED_DIR/data"
