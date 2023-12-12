@@ -4,7 +4,7 @@ PUBLIC_IPS=()
 
 json=$(<config.json)
 
-nodes=("HEADNODE_IP" "CLIENTNODE_IP")
+nodes=("HEADNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
@@ -18,7 +18,7 @@ PRIVATE_IPS=()
 
 json=$(<config.json)
 
-nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_CLIENTNODE_IP")
+nodes=("PRIVATE_CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
@@ -29,12 +29,8 @@ done
 
 # NFS Server Configuration
 PUBLIC_SERVER_IP="${PUBLIC_IPS[0]}"
-PRIVATE_SERVER_IP="${PRIVATE_IPS[0]}"
 
-
-# Array of NFS Client IPs
-PUBLIC_CLIENT_IPS=("${PUBLIC_IPS[@]:1}")
-PRIVATE_CLIENT_IPS=("${PRIVATE_IPS[@]:1}")
+NFS_CLIENT=$(jq -r '.NFS_CLIENT_IP[0]' config.json)
 
 # PostgreSQL Configuration
 DATABASE_DIR=$database_dir
@@ -42,8 +38,9 @@ PASSWORD=$db_password
 
 # SSH creds
 USERNAME=$admin_name
+NODEPASSD=$node_password
 
-ssh "$USERNAME"@$PUBLIC_SERVER_IP <<EOF
+env SSHPASS="$NODEPASSD" sshpass -d 123 ssh -o ProxyCommand="sshpass -e ssh -W %h:%p $USERNAME@$PUBLIC_SERVER_IP" $USERNAME@$NFS_CLIENT 123<<<$NODEPASSD <<EOF
 set -e
 
 sudo mkdir -p $DATABASE_DIR/docker-postgres-init
@@ -54,7 +51,7 @@ sudo tee init-db.sh > /dev/null <<'EOD'
 #!/bin/bash
 {
     echo "host  all all 172.17.0.0/16  md5"
-    for IP in ${PRIVATE_CLIENT_IPS[@]}; do
+    for IP in ${PRIVATE_IPS[@]}; do
         echo "host  all all \$IP/32  md5"
     done
 } >> "\$PGDATA/pg_hba.conf"

@@ -4,7 +4,7 @@ PUBLIC_IPS=()
 
 json=$(<config.json)
 
-nodes=("HEADNODE_IP" "CLIENTNODE_IP")
+nodes=("HEADNODE_IP")
 for node in "${nodes[@]}"; do
     ips=($(echo $json | jq -r ".${node}[]"))
     for ip in "${ips[@]}"; do
@@ -28,10 +28,6 @@ done
 # Nomad Server IP
 PUBLIC_SERVER_IP="${PUBLIC_IPS[0]}"
 PRIVATE_SERVER_IP="${PRIVATE_IPS[0]}"
-
-# Nomad Client IPs
-PUBLIC_CLIENT_IPS=("${PUBLIC_IPS[@]:1}")
-PRIVATE_CLIENT_IPS=("${PRIVATE_IPS[@]:1}")
 
 SHARE_DIR=$nfs_shared_dir
 DB_PASSWORD=$db_password

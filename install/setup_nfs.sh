@@ -4,7 +4,20 @@ PUBLIC_NFS_IPS=()
 
 json=$(<config.json)
 
-nodes=("HEADNODE_IP" "CLIENTNODE_IP")
+nodes=("HEADNODE_IP")
+for node in "${nodes[@]}"; do
+    echo "$node"
+    ips=($(echo $json | jq -r ".${node}[]"))
+    for ip in "${ips[@]}"; do
+        PUBLIC_NFS_IPS+=("$ip")
+    done
+done
+
+NFS_CLIENTS=()
+
+json=$(<config.json)
+
+nodes=("NFS_CLIENT_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
@@ -14,33 +27,32 @@ for node in "${nodes[@]}"; do
 done
 
 
-PRIVATE_NFS_IPS=()
+PRIVATE_NFS_CLIENT_IPS=()
 
 json=$(<config.json)
 
-nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_CLIENTNODE_IP")
+nodes=("PRIVATE_CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
     for ip in "${ips[@]}"; do
-        PRIVATE_NFS_IPS+=("$ip")
+        PRIVATE_NFS_CLIENT_IPS+=("$ip")
     done
 done
 
 # NFS Server Configuration
 PUBLIC_NFS_SERVER_IP="${PUBLIC_NFS_IPS[0]}"
-PRIVATE_NFS_SERVER_IP="${PRIVATE_NFS_IPS[0]}"
 
 
 # Array of NFS Client IPs
-PUBLIC_NFS_CLIENT_IPS=("${PUBLIC_NFS_IPS[@]:1}")
-PRIVATE_NFS_CLIENT_IPS=("${PRIVATE_NFS_IPS[@]:1}")
+NFS_CLIENT="${NFS_CLIENTS[0]}"
 
 SHARED_DIR=$nfs_shared_dir
 USERNAME=$admin_name
+NODEPASSD=$node_password
 
 # Install NFS Server on the NFS Server node
-ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
+env SSHPASS="$NODEPASSD" sshpass -d 123 ssh -o ProxyCommand="sshpass -e ssh -W %h:%p $USERNAME@$PUBLIC_NFS_SERVER_IP" $USERNAME@$NFS_CLIENT 123<<<$NODEPASSD <<EOF
 sudo apt update
 sudo apt install -y nfs-kernel-server
 if [ ! -d "$SHARED_DIR" ]; then
@@ -75,17 +87,17 @@ EOF
 
 
 # Mount the shared directory on NFS Client nodes
-for CLIENT_IP in "${PUBLIC_NFS_CLIENT_IPS[@]}"; do
-    ssh -o StrictHostKeyChecking=no "$USERNAME"@$CLIENT_IP <<EOF
+for CLIENT_IP in "${PRIVATE_NFS_CLIENT_IPS[@]}"; do
+    env SSHPASS="$NODEPASSD" sshpass -d 123 ssh -o ProxyCommand="sshpass -e ssh -W %h:%p $USERNAME@$PUBLIC_NFS_SERVER_IP" $USERNAME@$CLIENT_IP 123<<<$NODEPASSD <<EOF
 sudo apt -y update
 sudo apt-get install -y nfs-common
 if [ ! -d "$SHARED_DIR" ]; then
     echo "Creating shared directory: $SHARED_DIR"
     sudo mkdir -p "$SHARED_DIR"
 fi
-sudo mount -t nfs $PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR
+sudo mount -t nfs $NFS_CLIENT:$SHARED_DIR $SHARED_DIR
 # Add an entry to /etc/fstab for automatic mounting on boot, if needed
-export_line="$PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR nfs rw,hard,intr 0 0"
+export_line="$NFS_CLIENT:$SHARED_DIR $SHARED_DIR nfs rw,hard,intr 0 0"
 if ! grep -qF -- "\$export_line" /etc/fstab; then
     echo "Adding NFS mount for $CLIENT_IP"
     echo "\$export_line" | sudo tee -a /etc/fstab
