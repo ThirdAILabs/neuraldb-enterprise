@@ -7,10 +7,10 @@ fi
 case "$1" in
     client)
         sed -i "/^ *retry_join =/c\    retry_join = [\"$2:4647\"]" ./nomad/nomad_node_configs/client.hcl
-        sudo nomad agent -config=./nomad/nomad_node_configs/client.hcl
+        echo "$sudo_password" | sudo -S nomad agent -config=./nomad/nomad_node_configs/client.hcl
         ;;
     server)
-        sudo nomad agent -config=./nomad/nomad_node_configs/initial_server.hcl
+        echo "$sudo_password" | sudo -S nomad agent -config=./nomad/nomad_node_configs/initial_server.hcl
         ;;
     *)
         echo "Invalid option. Use 'client' or 'server''"

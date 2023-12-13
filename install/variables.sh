@@ -7,6 +7,7 @@ db_password="password"
 jwt_secret="1234"  # this should be a password-like string 
 admin_mail="admin@mail.com"
 admin_password="password"
+sudo_password="sudo_password"
 
 # Application autoscaling parameters
 autoscaling_enabled=false
