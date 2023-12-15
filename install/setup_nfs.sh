@@ -22,7 +22,7 @@ for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
     for ip in "${ips[@]}"; do
-        PUBLIC_NFS_IPS+=("$ip")
+        NFS_CLIENTS+=("$ip")
     done
 done
 
