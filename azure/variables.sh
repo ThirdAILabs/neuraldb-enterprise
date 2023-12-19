@@ -7,6 +7,7 @@ head_node_ipname=""
 admin_name=""
 db_password=""
 jwt_secret=""  # this should be a password-like string 
+genai_key=""
 
 # Can change these variables if desired
 location="centralus"
