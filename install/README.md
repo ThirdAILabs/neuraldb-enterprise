@@ -24,6 +24,7 @@ This installation assumes the following:
    - Ensure that `license_path` is set correctly to a path on your machine. This should point to the NeuralDB Enterprise License that you recieved in an email.
    - Set `admin_name` to the username used to SSH into each of the nodes in your cluster
    - `admin_mail` and `admin_password` will be your login information to NeuralDB Enterprise
+   - Set `genai_key` to the API key for your generative model. Right now, NeuralDB Enterprise only supports GPT3.5 Turbo.
 8. Run `bash setup.sh` in the Terminal.
 
 Wait for the setup process to complete (approximately 10 minutes), and you have launched NeuralDB Enterprise on your own Azure VM cluster!
