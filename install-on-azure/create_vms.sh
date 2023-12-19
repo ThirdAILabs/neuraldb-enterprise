@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Creates a resource group
 echo "Creating a resource group with the name $resource_group_name..."
 az group create --location $location --name $resource_group_name

@@ -29,15 +29,15 @@ job "search-ui" {
       driver = "docker"
 
       env {
-        REACT_APP_MODEL_BAZAAR_URL = "http://{{ PUBLIC_PROXY_SERVER_IP }}"
+        REACT_APP_MODEL_BAZAAR_URL = "http://{{ PUBLIC_SERVER_IP }}"
       }
 
       config {
         image = "thirdaistaging.azurecr.io/search-ui-job:latest"
         ports = ["search-ui-http"]
         auth {
-          username = "SearchUIJob"
-          password = "ajKyCWWkiGJMxZYFLH/8+5pBb2g6RjPubqMepIRwKN+ACRDi/0H8"
+          username = "NomadToken"
+          password = "FO15fMI9CxZFn8fLL45ZiphDhNAA8SBGaHjfRCZHD0+ACRBr3VLA"
           server_address = "thirdaistaging.azurecr.io"
         }
       }

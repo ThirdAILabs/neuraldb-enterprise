@@ -4,7 +4,7 @@ PUBLIC_NFS_IPS=()
 
 json=$(<config.json)
 
-nodes=("HEADNODE_IP" "PROXY_CLIENT_IP" "CLIENTNODE_IP")
+nodes=("HEADNODE_IP" "CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
     echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
@@ -13,6 +13,9 @@ for node in "${nodes[@]}"; do
     done
 done
 
-PUBLIC_NFS_CLIENT_IP="${PUBLIC_NFS_IPS[1]}"
+PUBLIC_NFS_SERVER_IP="${PUBLIC_NFS_IPS[0]}"
+USERNAME=$admin_name
+NFS_SHARED_DIR=$nfs_shared_dir
 
-scp $license_path "$USERNAME"@$PUBLIC_NFS_CLIENT_IP:/model_bazaar/license/
+
+scp $license_path "$USERNAME"@$PUBLIC_NFS_SERVER_IP:$NFS_SHARED_DIR/license

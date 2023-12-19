@@ -30,12 +30,17 @@ job "modelbazaar" {
 
       env {
         DATABASE_URI = "postgresql://modelbazaaruser:{{ DB_PASSWORD }}@{{ PRIVATE_SERVER_IP }}:5432/modelbazaar"
-        PUBLIC_MODEL_BAZAAR_ENDPOINT = "http://{{ PUBLIC_PROXY_SERVER_IP }}/"
-        PRIVATE_MODEL_BAZAAR_ENDPOINT = "http://{{ PRIVATE_PROXY_SERVER_IP }}/"
+        PUBLIC_MODEL_BAZAAR_ENDPOINT = "http://{{ PUBLIC_SERVER_IP }}/"
+        PRIVATE_MODEL_BAZAAR_ENDPOINT = "http://{{ PRIVATE_SERVER_IP }}/"
         LICENSE_PATH = "/model_bazaar/license/ndb_enterprise_license.json"
         NOMAD_ENDPOINT = "http://172.17.0.1:4646/"
         SHARE_DIR = "{{ SHARE_DIR }}"
         JWT_SECRET = "{{ JWT_SECRET }}"
+        ADMIN_USERNAME =  "{{ ADMIN_USERNAME }}"
+        ADMIN_MAIL = "{{ ADMIN_MAIL }}"
+        ADMIN_PASSWORD = "{{ ADMIN_PASSWORD }}"
+        AUTOSCALING_ENABLED = "{{ AUTOSCALING_ENABLED }}"
+        AUTOSCALER_MAX_COUNT = "{{ AUTOSCALER_MAX_COUNT }}"
       }
 
       config {
@@ -47,7 +52,7 @@ job "modelbazaar" {
           server_address = "thirdaistaging.azurecr.io"
         }
         volumes = [
-          "/model_bazaar:/model_bazaar"
+          "{{ SHARE_DIR }}:/model_bazaar"
         ]
       }
 
