@@ -61,6 +61,13 @@ PG_CONN_STRING="postgresql://modelbazaaruser:$PASSWORD@$PRIVATE_SERVER_IP:5432/m
 
 ssh "$USERNAME"@$PUBLIC_SERVER_IP <<EOF
 set -e
+
+if ! command -v psql &> /dev/null; then
+    echo "psql could not be found. Installing postgresql-client..."
+    sudo apt update
+    sudo apt install postgresql-client -y
+fi
+
 user_id=\$(psql "$PG_CONN_STRING" -At -c "select id from users where username='$model_username';")
 if [ -z "\$user_id" ]; then
     echo "The user doesn't exist"
