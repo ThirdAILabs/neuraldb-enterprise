@@ -6,6 +6,7 @@ vnet_name="neuraldb-enterprise-vnet"
 subnet_name="neuraldb-enterprise-subnet"
 head_node_ipname="neuraldb-enterprise-ip"
 admin_name="admin"
+vm_name="Head"
 
 # Can change these variables if desired
 location="centralus"
