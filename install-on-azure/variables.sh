@@ -11,3 +11,4 @@ admin_name="admin"
 location="centralus"
 vm_type="Standard_DS2_v2"
 vm_count=2  # vm_count must be greater than or equal to 0
+shared_disk_lun=7

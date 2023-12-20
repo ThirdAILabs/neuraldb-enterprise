@@ -36,7 +36,7 @@ az network nic create \
 
 # This created the Head Node of the VM. In the future we can support more things like specifying VM sizes or the Data Disk Size.
 az vm create \
-  --name Head \
+  --name $vm_name \
   --resource-group $resource_group_name \
   --location $location \
   --image Ubuntu2204 \
@@ -45,6 +45,16 @@ az vm create \
   --generate-ssh-keys \
   --size $vm_type \
   --data-disk-sizes-gb 100
+
+# This creates a new disk attached to the Head Node on which nfs will be initialized
+az vm disk attach \
+  --vm-name $vm_name \
+  --resource-group $resource_group_name \
+  --name "DataDisk" \
+  --size-gb 1024 \
+  --sku "Premium_LRS" \
+  --lun $shared_disk_lun \
+  --new
 
 # These creates Client Nodes.
 for ((i=1; i<=$vm_count; i++))
