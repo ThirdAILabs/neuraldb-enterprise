@@ -1,5 +1,13 @@
 #!/bin/bash
 
+set -e
+
+need_nfs=$(jq -r '.setup_nfs' config.json)
+if [ "$need_nfs" != true ]; then
+    # no need to setup the nfs
+    exit 0
+fi
+
 PUBLIC_NFS_IPS=()
 
 json=$(<config.json)
@@ -36,32 +44,20 @@ PRIVATE_NFS_SERVER_IP="${PRIVATE_NFS_IPS[0]}"
 PUBLIC_NFS_CLIENT_IPS=("${PUBLIC_NFS_IPS[@]:1}")
 PRIVATE_NFS_CLIENT_IPS=("${PRIVATE_NFS_IPS[@]:1}")
 
-SHARED_DIR=$nfs_shared_dir
+SHARED_DIR=$(jq -r '.shared_dir' config.json)
 USERNAME=$admin_name
-SHARED_DISK_LUN=$(jq '.shared_disk_lun' config.json)
-
 # Install NFS Server on the NFS Server node
 ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
 sudo apt update
 sudo apt install -y nfs-kernel-server
-if [ ! -d "$SHARED_DIR" ]; then
-    sudo apt install lsscsi
-    shared_device=$(sudo lsscsi | grep "[0-9]\+:[0-9]\+:[0-9]\+:$SHARED_DISK_LUN" | awk '{print $NF}')
-    echo "$shared_device   $SHARED_DIR   ext4   defaults   0   0" | sudo tee -a /etc/fstab
-    echo "Mounting shared directory on disk drive: $SHARED_DIR"
-    sudo mkdir -p "$SHARED_DIR"
-    sudo chmod 777 $SHARED_DIR
-    sudo mkfs -t ext4 $shared_device
-    sudo mount $shared_device $SHARED_DIR
-    sudo groupadd -g 4646 nomad_nfs || true
-    sudo useradd -u 4646 -g 4646 nomad_nfs || true
-    sudo chown :4646 $SHARED_DIR
-    sudo chmod g+s $SHARED_DIR
-    mkdir -p "$SHARED_DIR/license"
-    mkdir -p "$SHARED_DIR/models"
-    mkdir -p "$SHARED_DIR/data"
-    mkdir -p "$SHARED_DIR/users"
-fi
+sudo groupadd -g 4646 nomad_nfs || true
+sudo useradd -u 4646 -g 4646 nomad_nfs || true
+sudo chown :4646 $SHARED_DIR
+sudo chmod g+s $SHARED_DIR
+sudo mkdir -p "$SHARED_DIR/license"
+sudo mkdir -p "$SHARED_DIR/models"
+sudo mkdir -p "$SHARED_DIR/data"
+sudo mkdir -p "$SHARED_DIR/users"
 # Add NFS client IPs to /etc/exports
 for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
     export_line="$SHARED_DIR \$CLIENT_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"

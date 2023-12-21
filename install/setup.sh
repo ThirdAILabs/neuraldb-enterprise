@@ -1,10 +1,15 @@
 #!/bin/bash
 
+set -e
+
 # This just loads the resource group variables.
 source variables.sh
 
 # Set up the NFS server on the Head node, and mount the NFS server on each of the clients
 source setup_nfs.sh
+
+# Check if the shared dir collaboration is working properly or not
+source shared_disk_check.sh
 
 # Upload the Rag on Rails license to the Nomad cluster
 source upload_license.sh

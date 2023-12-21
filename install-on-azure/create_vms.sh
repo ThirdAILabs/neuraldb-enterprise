@@ -47,14 +47,16 @@ az vm create \
   --data-disk-sizes-gb 100
 
 # This creates a new disk attached to the Head Node on which nfs will be initialized
-az vm disk attach \
-  --vm-name $vm_name \
-  --resource-group $resource_group_name \
-  --name "DataDisk" \
-  --size-gb 1024 \
-  --sku "Premium_LRS" \
-  --lun $shared_disk_lun \
-  --new
+if [ -z "$shared_dir" ]; then     #shared_dir variale is unset or blank string.
+  echo "Creating data disk.."
+  az vm disk attach \
+    --vm-name $vm_name \
+    --resource-group $resource_group_name \
+    --new \
+    --name $disk_name \
+    --size-gb 1024 \
+    --sku "Premium_LRS"
+fi
 
 # These creates Client Nodes.
 for ((i=1; i<=$vm_count; i++))

@@ -13,5 +13,6 @@
     "30.30.30.30",
     "40.40.40.40"
   ],
-  "shared_disk_lun": "7"
+  "setup_nfs": true,
+  "shared_dir": "/mnt/neuraldb_enterprise/model_bazaar"
 }
