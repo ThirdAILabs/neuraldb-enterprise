@@ -50,4 +50,4 @@ fi
 
 # Removing node_status file from shared_dir
 ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP "sudo rm -rf $shared_file"
-#rm -rf $local_file
+rm -rf $local_file
