@@ -14,7 +14,6 @@ json=$(<config.json)
 
 nodes=("HEADNODE_IP" "CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
-    echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
     for ip in "${ips[@]}"; do
         PUBLIC_NFS_IPS+=("$ip")
@@ -28,7 +27,6 @@ json=$(<config.json)
 
 nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_CLIENTNODE_IP")
 for node in "${nodes[@]}"; do
-    echo "$node"
     ips=($(echo $json | jq -r ".${node}[]"))
     for ip in "${ips[@]}"; do
         PRIVATE_NFS_IPS+=("$ip")
@@ -48,16 +46,16 @@ SHARED_DIR=$(jq -r '.shared_dir' config.json)
 USERNAME=$admin_name
 # Install NFS Server on the NFS Server node
 ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
-sudo apt update
+sudo apt -y update
 sudo apt install -y nfs-kernel-server
 sudo groupadd -g 4646 nomad_nfs || true
 sudo useradd -u 4646 -g 4646 nomad_nfs || true
-sudo chown :4646 $SHARED_DIR
-sudo chmod g+s $SHARED_DIR
 sudo mkdir -p "$SHARED_DIR/license"
 sudo mkdir -p "$SHARED_DIR/models"
 sudo mkdir -p "$SHARED_DIR/data"
 sudo mkdir -p "$SHARED_DIR/users"
+sudo chown -R 4646:4646 $SHARED_DIR 
+sudo chmod -R g+s $SHARED_DIR
 # Add NFS client IPs to /etc/exports
 for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
     export_line="$SHARED_DIR \$CLIENT_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"

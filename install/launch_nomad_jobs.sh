@@ -33,7 +33,7 @@ PRIVATE_SERVER_IP="${PRIVATE_IPS[0]}"
 PUBLIC_CLIENT_IPS=("${PUBLIC_IPS[@]:1}")
 PRIVATE_CLIENT_IPS=("${PRIVATE_IPS[@]:1}")
 
-SHARE_DIR=$nfs_shared_dir
+SHARE_DIR="$(jq -r '.shared_dir' config.json)/nodes_status"
 DB_PASSWORD=$db_password
 
 
