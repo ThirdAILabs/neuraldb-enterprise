@@ -21,12 +21,12 @@ else
     echo "Docker is already installed."
 fi
 
-# Check if wget command exists
+# Check if tmux command exists
 if ! command -v tmux &> /dev/null; then
     echo "tmux not found. Installing..."
     # Update package list
     sudo apt update
-    # Install wget
+    # Install tmux
     sudo apt install -y tmux
 else
     echo "tmux is already installed."
