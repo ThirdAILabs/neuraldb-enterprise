@@ -35,6 +35,7 @@ job "search-ui" {
       config {
         image = "thirdaistaging.azurecr.io/search-ui-job:latest"
         ports = ["search-ui-http"]
+        group_add = ["4646"]
         auth {
           username = "NomadToken"
           password = "FO15fMI9CxZFn8fLL45ZiphDhNAA8SBGaHjfRCZHD0+ACRBr3VLA"

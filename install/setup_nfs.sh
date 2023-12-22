@@ -43,18 +43,21 @@ USERNAME=$admin_name
 ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
 sudo apt update
 sudo apt install -y nfs-kernel-server
+sudo apt install -y acl
 if [ ! -d "$SHARED_DIR" ]; then
     echo "Creating shared directory: $SHARED_DIR"
     sudo mkdir -p "$SHARED_DIR"
-    sudo chmod 777 $SHARED_DIR
     sudo groupadd -g 4646 nomad_nfs || true
     sudo useradd -u 4646 -g 4646 nomad_nfs || true
+    sudo usermod -a -G 4646 $USERNAME
     sudo chown :4646 $SHARED_DIR
     sudo chmod g+s $SHARED_DIR
-    mkdir -p "$SHARED_DIR/license"
-    mkdir -p "$SHARED_DIR/models"
-    mkdir -p "$SHARED_DIR/data"
-    mkdir -p "$SHARED_DIR/users"
+    sudo chmod 774 $SHARED_DIR
+    sudo setfacl -d -m u::rwx,g::rwx,o::r $SHARED_DIR
+    sudo mkdir -p "$SHARED_DIR/license"
+    sudo mkdir -p "$SHARED_DIR/models"
+    sudo mkdir -p "$SHARED_DIR/data"
+    sudo mkdir -p "$SHARED_DIR/users"
 fi
 # Add NFS client IPs to /etc/exports
 for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
