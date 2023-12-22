@@ -3,7 +3,7 @@
 set -e
 
 need_nfs=$(jq -r '.setup_nfs' config.json)
-if [ "$need_nfs" != true ]; then
+if [ $need_nfs != true ]; then
     # no need to setup the nfs
     exit 0
 fi
@@ -48,14 +48,16 @@ USERNAME=$admin_name
 ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
 sudo apt -y update
 sudo apt install -y nfs-kernel-server
+sudo apt install -y acl
 sudo groupadd -g 4646 nomad_nfs || true
 sudo useradd -u 4646 -g 4646 nomad_nfs || true
 sudo mkdir -p "$SHARED_DIR/license"
 sudo mkdir -p "$SHARED_DIR/models"
 sudo mkdir -p "$SHARED_DIR/data"
 sudo mkdir -p "$SHARED_DIR/users"
-sudo chown -R 4646:4646 $SHARED_DIR 
+sudo chown -R :4646 $SHARED_DIR 
 sudo chmod -R g+s $SHARED_DIR
+sudo setfacl -d -R -m u::rwX,g::rwX,o::r-X $SHARED_DIR
 # Add NFS client IPs to /etc/exports
 for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
     export_line="$SHARED_DIR \$CLIENT_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"
@@ -79,10 +81,12 @@ for CLIENT_IP in "${PUBLIC_NFS_CLIENT_IPS[@]}"; do
     ssh -o StrictHostKeyChecking=no "$USERNAME"@$CLIENT_IP <<EOF
 sudo apt -y update
 sudo apt-get install -y nfs-common
+sudo apt-get install -y acl
 if [ ! -d "$SHARED_DIR" ]; then
     echo "Creating shared directory: $SHARED_DIR"
     sudo mkdir -p "$SHARED_DIR"
 fi
+sudo setfacl -d -R -m u::rwX,g::rwX,o::r-X $SHARED_DIR
 sudo mount -t nfs $PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR
 # Add an entry to /etc/fstab for automatic mounting on boot, if needed
 export_line="$PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR nfs rw,hard,intr 0 0"

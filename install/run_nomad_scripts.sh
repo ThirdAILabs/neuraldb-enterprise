@@ -5,7 +5,7 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-declare -A config_map=( ["client"]="CLIENTNODE_IP" ["server"]="HEADNODE_IP" )
+declare config_map=( ["client"]="CLIENTNODE_IP" ["server"]="HEADNODE_IP" )
 
 json=$(<config.json)
 
