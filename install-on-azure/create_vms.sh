@@ -47,7 +47,7 @@ az vm create \
   --data-disk-sizes-gb 100
 
 # This creates a new disk attached to the Head Node on which nfs will be initialized
-if [ -z "$shared_dir" ]; then     #shared_dir variale is unset or blank string.
+if [ -z "$custom_shared_dir" ]; then     #custom_shared_dir variable is unset or blank string.
   echo "Creating data disk.."
   az vm disk attach \
     --vm-name $vm_name \

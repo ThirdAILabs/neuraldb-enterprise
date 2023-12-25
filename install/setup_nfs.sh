@@ -40,16 +40,18 @@ SHARED_DIR=$(jq -r '.shared_dir' config.json)
 USERNAME=$admin_name
 
 ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
+    sudo apt -y update
     sudo groupadd -g 4646 nomad_nfs || true
     sudo useradd -u 4646 -g 4646 nomad_nfs || true
     sudo usermod -a -G 4646 $USERNAME
-    sudo chown :4646 $SHARED_DIR
-    sudo chmod g+s $SHARED_DIR
+    sudo mkdir -p $SHARED_DIR
+    sudo mkdir "$SHARED_DIR/license"
+    sudo mkdir "$SHARED_DIR/models"
+    sudo mkdir "$SHARED_DIR/data"
+    sudo mkdir "$SHARED_DIR/users"
+    sudo chown -R :4646 $SHARED_DIR
     sudo chmod -R 774 $SHARED_DIR
-    sudo mkdir -p "$SHARED_DIR/license"
-    sudo mkdir -p "$SHARED_DIR/models"
-    sudo mkdir -p "$SHARED_DIR/data"
-    sudo mkdir -p "$SHARED_DIR/users"
+    sudo chmod -R g+s $SHARED_DIR
 EOF
 
 # Install NFS Server on the NFS Server node
@@ -57,7 +59,7 @@ if [ "$need_nfs" == true ]; then
     ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
     sudo apt install -y nfs-kernel-server
     sudo apt install -y acl
-    sudo setfacl -d -m -R u::rwx,g::rwx,o::r $SHARED_DIR
+    sudo setfacl -d -R -m u::rwx,g::rwx,o::r $SHARED_DIR
 
     # Add NFS client IPs to /etc/exports
     for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
@@ -79,6 +81,7 @@ if [ "$need_nfs" == true ]; then
     # Adjust firewall settings if needed
     # sudo ufw allow from $NFS_CLIENT_IP to any port nfs
 EOF
+
     # Mount the shared directory on NFS Client nodes
     for CLIENT_IP in "${PUBLIC_NFS_CLIENT_IPS[@]}"; do
         ssh -o StrictHostKeyChecking=no "$USERNAME"@$CLIENT_IP <<EOF
