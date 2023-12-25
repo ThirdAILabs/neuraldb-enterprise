@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Should change these variables
-license_path="/Users/gautamsharma/Desktop/ThirdAI/neuraldb-enterprise/azure/ndb_enterprise_license.json"  # license file must be named ndb_enterprise_license.json
-admin_name="gautam"
+license_path="path/to/ndb_enterprise_license.json"  # license file must be named ndb_enterprise_license.json
+admin_name="admin"
 db_password="password"
-jwt_secret="CsnCr3lebs9eJQ"  # this should be a password-like string 
-admin_mail="gautam@thirdai.com"
+jwt_secret="1234"  # this should be a password-like string 
+admin_mail="admin@mail.com"
 admin_password="password"
 genai_key="key-for-generative-ai"
 
