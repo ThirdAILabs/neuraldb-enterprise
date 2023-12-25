@@ -21,6 +21,17 @@ else
     echo "Docker is already installed."
 fi
 
+# Check if tmux command exists
+if ! command -v tmux &> /dev/null; then
+    echo "tmux not found. Installing..."
+    # Update package list
+    sudo apt update
+    # Install tmux
+    sudo apt install -y tmux
+else
+    echo "tmux is already installed."
+fi
+
 
 keyring_file="/usr/share/keyrings/hashicorp-archive-keyring.gpg"
 if [ -f "$keyring_file" ]; then

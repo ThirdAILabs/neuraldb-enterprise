@@ -41,11 +41,13 @@ job "modelbazaar" {
         ADMIN_PASSWORD = "{{ ADMIN_PASSWORD }}"
         AUTOSCALING_ENABLED = "{{ AUTOSCALING_ENABLED }}"
         AUTOSCALER_MAX_COUNT = "{{ AUTOSCALER_MAX_COUNT }}"
+        GENAI_KEY = "{{ GENAI_KEY }}"
       }
 
       config {
         image = "thirdaistaging.azurecr.io/model-bazaar:latest"
         ports = ["modelbazaar-http"]
+        group_add = ["4646"]
         auth {
           username = "NomadToken"
           password = "FO15fMI9CxZFn8fLL45ZiphDhNAA8SBGaHjfRCZHD0+ACRBr3VLA"
