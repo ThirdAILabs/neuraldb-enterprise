@@ -5,7 +5,7 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-declare config_map=( ["client"]="CLIENTNODE_IP" ["server"]="HEADNODE_IP" )
+declare -A config_map=( ["client"]="CLIENTNODE_IP" ["server"]="HEADNODE_IP" )
 
 json=$(<config.json)
 
@@ -16,7 +16,6 @@ if [ -z "$json_key" ]; then
 fi
 
 ips=$(echo $json | jq -r ".${json_key}[]")
-echo $ips
 
 private_headnode_ip=$(jq -r '.PRIVATE_HEADNODE_IP[0]' config.json)
 echo $private_headnode_ip

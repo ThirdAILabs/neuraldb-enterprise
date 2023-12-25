@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 # This just loads the resource group variables.
 source variables.sh
 
