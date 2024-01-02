@@ -21,25 +21,26 @@ PUBLIC_NFS_CLIENT_IPS=("${PUBLIC_NFS_IPS[@]:1}")
 
 # User
 USERNAME=$admin_name
-shared_file="$(jq -r '.shared_dir' config.json)/nodes_status"
+status_filename="node_status"
+status_file_loc="$shared_dir/$status_filename"
 
 # Headnode connectivity check
 ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
-    echo "$PUBLIC_NFS_SERVER_IP | success" | sudo tee $shared_file
+    echo "$PUBLIC_NFS_SERVER_IP | success" | sudo tee $status_file_loc
 EOF
 
 # Client node connectivity check
 for CLIENT_IP in "${PUBLIC_NFS_CLIENT_IPS[@]}"; do
     ssh -o StrictHostKeyChecking=no "$USERNAME"@$CLIENT_IP <<EOF
-echo "$CLIENT_IP | success" | sudo tee -a $shared_file
+echo "$CLIENT_IP | success" | sudo tee -a $status_file_loc
 EOF
 done
 
 # copying node_status file into local directory
-local_file="node_status"
-scp "$USERNAME"@$PUBLIC_NFS_SERVER_IP:$shared_file $local_file
 
-line_count=$(wc -l "$local_file" | awk '{print $1}')
+scp "$USERNAME"@$PUBLIC_NFS_SERVER_IP:$status_file_loc .
+
+line_count=$(wc -l "$status_filename" | awk '{print $1}')
 
 if [ $line_count -ne ${#PUBLIC_NFS_IPS[@]} ]; then
     echo "Shared directory is not accessible by every node"
@@ -49,5 +50,5 @@ else
 fi
 
 # Removing node_status file from shared_dir
-ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP "sudo rm -f $shared_file"
-rm -f $local_file
+ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP "sudo rm -f $status_file_loc"
+rm -f $status_filename

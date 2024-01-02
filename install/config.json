@@ -1,20 +1,16 @@
 {
   "HEADNODE_IP": [
-    "172.173.72.18"
-  ],
-  "CLIENTNODE_IP": [
-    "20.12.177.71",
-    "172.202.26.197",
-    "172.202.30.107"
+    "11.11.11.11"
   ],
   "PRIVATE_HEADNODE_IP": [
-    "10.0.0.4"
+    "10.10.10.10"
+  ],
+  "CLIENTNODE_IP": [
+    "33.33.33.33",
+    "44.44.44.44"
   ],
   "PRIVATE_CLIENTNODE_IP": [
-    "10.0.0.5",
-    "10.0.0.6",
-    "10.0.0.7"
-  ],
-  "setup_nfs": true,
-  "shared_dir": "/home/gautam/neuraldb_enterprise/model_bazaar"
+    "30.30.30.30",
+    "40.40.40.40"
+  ]
 }

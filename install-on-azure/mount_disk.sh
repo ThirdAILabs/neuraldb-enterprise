@@ -4,9 +4,8 @@ PUBLIC_NFS_SERVER_IP=$(jq -r '.HEADNODE_IP | .[0]' config.json)
 USERNAME=$admin_name
 if [ -n "$custom_shared_dir" ]; then
     shared_dir=$custom_shared_dir
+    setup_nfs=false
     echo "Using shared drive: $shared_dir"
-EOF
-    jq ". += {"setup_nfs": false}" config.json > temp.json && mv temp.json config.json
 else
     mount_point="/home/$USERNAME/neuraldb_enterprise"
     shared_dir="$mount_point/model_bazaar"
@@ -27,11 +26,19 @@ else
         echo "fstab entry already exists"
     fi
 EOF
-    jq ". += {"setup_nfs": true}" config.json > temp.json && mv temp.json config.json
+    setup_nfs=true
 fi
 
-# adding model bazaar shared directory location
-jq ". += {\"shared_dir\": \"$shared_dir\"}" config.json > temp.json && mv temp.json config.json
+# Updating or Adding setup_nfs and shared_dir variables in the variable.sh file of install
+file_path="../install/variables.sh"
+if grep -q -- "^setup_nfs=.*" $file_path; then
+    sed -i '' "s/^setup_nfs=.*/setup_nfs=$setup_nfs/" $file_path
+else
+    echo "setup_nfs=$setup_nfs" >> $file_path
+fi
 
-
-
+if grep -q -- "^shared_dir=.*" $file_path; then
+    sed -i '' "s|^shared_dir=.*|shared_dir=$shared_dir|" $file_path
+else
+    echo "shared_dir=$shared_dir" >> $file_path
+fi

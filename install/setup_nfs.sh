@@ -1,7 +1,5 @@
 #!/bin/bash
 
-need_nfs=$(jq -r '.setup_nfs' config.json)
-
 PUBLIC_NFS_IPS=()
 
 json=$(<config.json)
@@ -36,7 +34,6 @@ PRIVATE_NFS_SERVER_IP="${PRIVATE_NFS_IPS[0]}"
 PUBLIC_NFS_CLIENT_IPS=("${PUBLIC_NFS_IPS[@]:1}")
 PRIVATE_NFS_CLIENT_IPS=("${PRIVATE_NFS_IPS[@]:1}")
 
-SHARED_DIR=$(jq -r '.shared_dir' config.json)
 USERNAME=$admin_name
 
 ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
@@ -44,26 +41,26 @@ ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
     sudo groupadd -g 4646 nomad_nfs || true
     sudo useradd -u 4646 -g 4646 nomad_nfs || true
     sudo usermod -a -G 4646 $USERNAME
-    sudo mkdir -p $SHARED_DIR
-    sudo mkdir "$SHARED_DIR/license"
-    sudo mkdir "$SHARED_DIR/models"
-    sudo mkdir "$SHARED_DIR/data"
-    sudo mkdir "$SHARED_DIR/users"
-    sudo chown -R :4646 $SHARED_DIR
-    sudo chmod -R 774 $SHARED_DIR
-    sudo chmod -R g+s $SHARED_DIR
+    sudo mkdir -p $shared_dir
+    sudo mkdir "$shared_dir/license"
+    sudo mkdir "$shared_dir/models"
+    sudo mkdir "$shared_dir/data"
+    sudo mkdir "$shared_dir/users"
+    sudo chown -R :4646 $shared_dir
+    sudo chmod -R 774 $shared_dir
+    sudo chmod -R g+s $shared_dir
 EOF
 
 # Install NFS Server on the NFS Server node
-if [ "$need_nfs" == true ]; then
+if [ "$setup_nfs" == true ]; then
     ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
     sudo apt install -y nfs-kernel-server
     sudo apt install -y acl
-    sudo setfacl -d -R -m u::rwx,g::rwx,o::r $SHARED_DIR
+    sudo setfacl -d -R -m u::rwx,g::rwx,o::r $shared_dir
 
     # Add NFS client IPs to /etc/exports
     for CLIENT_IP in ${PRIVATE_NFS_CLIENT_IPS[@]}; do
-        export_line="$SHARED_DIR \$CLIENT_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"
+        export_line="$shared_dir \$CLIENT_IP(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"
         if ! grep -qF -- "\$export_line" /etc/exports; then
             echo "Adding NFS export for \$CLIENT_IP"
             echo "\$export_line" | sudo tee -a /etc/exports
@@ -87,13 +84,13 @@ EOF
         ssh -o StrictHostKeyChecking=no "$USERNAME"@$CLIENT_IP <<EOF
         sudo apt -y update
         sudo apt-get install -y nfs-common
-        if [ ! -d "$SHARED_DIR" ]; then
-            echo "Creating shared directory: $SHARED_DIR"
-            sudo mkdir -p "$SHARED_DIR"
+        if [ ! -d "$shared_dir" ]; then
+            echo "Creating shared directory: $shared_dir"
+            sudo mkdir -p "$shared_dir"
         fi
-        sudo mount -t nfs $PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR
+        sudo mount -t nfs $PRIVATE_NFS_SERVER_IP:$shared_dir $shared_dir
         # Add an entry to /etc/fstab for automatic mounting on boot, if needed
-        export_line="$PRIVATE_NFS_SERVER_IP:$SHARED_DIR $SHARED_DIR nfs rw,hard,intr 0 0"
+        export_line="$PRIVATE_NFS_SERVER_IP:$shared_dir $shared_dir nfs rw,hard,intr 0 0"
         if ! grep -qF -- "\$export_line" /etc/fstab; then
             echo "Adding NFS mount for $CLIENT_IP"
             echo "\$export_line" | sudo tee -a /etc/fstab
