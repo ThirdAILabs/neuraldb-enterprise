@@ -31,14 +31,5 @@ fi
 
 # Updating or Adding setup_nfs and shared_dir variables in the variable.sh file of install
 file_path="../install/variables.sh"
-if grep -q -- "^setup_nfs=.*" $file_path; then
-    sed -i '' "s/^setup_nfs=.*/setup_nfs=$setup_nfs/" $file_path
-else
-    echo "setup_nfs=$setup_nfs" >> $file_path
-fi
-
-if grep -q -- "^shared_dir=.*" $file_path; then
-    sed -i '' "s|^shared_dir=.*|shared_dir=$shared_dir|" $file_path
-else
-    echo "shared_dir=$shared_dir" >> $file_path
-fi
+sed -i '' "s/^setup_nfs=.*/setup_nfs=$setup_nfs/" $file_path
+sed -i '' "s|^shared_dir=.*|shared_dir=$shared_dir|" $file_path
