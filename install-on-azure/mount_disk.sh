@@ -12,7 +12,7 @@ else
     echo "Mounting shared drive at $mount_point"
 
     # Finding the Logical unit number of the attached data disk
-    disk_lun=$(az vm show --resource-group $resource_group_name --name $vm_name --query "storageProfile.dataDisks[?name=='$disk_name'].lun" -o tsv)
+    disk_lun=$(az vm show --resource-group $resource_group_name --name Head --query "storageProfile.dataDisks[?name=='DataDisk'].lun" -o tsv)
     ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
     sudo apt -y update
     device_name="/dev/\$(ls -l /dev/disk/azure/scsi1 | grep -oE "lun$disk_lun -> ../../../[a-z]+" | awk -F'/' '{print \$NF}')"
