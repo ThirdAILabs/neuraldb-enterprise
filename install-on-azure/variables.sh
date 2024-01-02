@@ -13,6 +13,3 @@ disk_name="DataDisk"
 location="centralus"
 vm_type="Standard_DS2_v2"
 vm_count=2  # vm_count must be greater than or equal to 0
-
-# provide the path of the custom shared drive
-# custom_shared_dir="/path/to/shared/dir"
