@@ -9,7 +9,7 @@ source setup_nfs.sh
 # Check if the shared dir collaboration is working properly or not
 ( source shared_disk_check.sh )
 if [ $? -ne 0 ]; then
-    echo "Directory is not being shared among nodes."
+    echo "Directory is not being shared among nodes. Ensure that all nodes have access to the shared directory before rerunning this script"
 else
     # Upload the Rag on Rails license to the Nomad cluster
     source upload_license.sh
