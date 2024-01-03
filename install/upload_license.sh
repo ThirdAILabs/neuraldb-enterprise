@@ -1,21 +1,9 @@
 #!/bin/bash
 
-PUBLIC_NFS_IPS=()
-
-json=$(<config.json)
-
-nodes=("HEADNODE_IP" "CLIENTNODE_IP")
-for node in "${nodes[@]}"; do
-    echo "$node"
-    ips=($(echo $json | jq -r ".${node}[]"))
-    for ip in "${ips[@]}"; do
-        PUBLIC_NFS_IPS+=("$ip")
-    done
-done
-
-PUBLIC_NFS_SERVER_IP="${PUBLIC_NFS_IPS[0]}"
+PUBLIC_NFS_SERVER_IP="$(jq -r '.HEADNODE_IP | .[0]' config.json)"
 USERNAME=$admin_name
-NFS_SHARED_DIR=$nfs_shared_dir
 
+scp $license_path "$USERNAME"@$PUBLIC_NFS_SERVER_IP:$shared_dir/license
 
-scp $license_path "$USERNAME"@$PUBLIC_NFS_SERVER_IP:$NFS_SHARED_DIR/license
+# Files moved from other directory or scp-ed file doesn't inherit required permission set by ACL.
+ssh $USERNAME@$PUBLIC_NFS_SERVER_IP "sudo chmod g+w $shared_dir/license/ndb_enterprise_license.json"

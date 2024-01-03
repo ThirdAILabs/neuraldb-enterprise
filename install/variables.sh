@@ -14,5 +14,8 @@ autoscaling_enabled=false
 autoscaler_max_count=1
 
 # Shouldn't change these variables
-nfs_shared_dir="/opt/neuraldb_enterprise/model_bazaar"
 database_dir="/opt/neuraldb_enterprise/database"
+
+# change these variables if custom cluster need to be used
+shared_dir=/opt/neuraldb_enterprise/model_bazaar
+setup_nfs=true

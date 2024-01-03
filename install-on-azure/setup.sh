@@ -10,3 +10,6 @@ source create_vms.sh
 # This writes files in config.json
 # Basically this a programmatic way of writing all the public IP addresses of the VMs that we have created into a JSON File
 source write_ip_to_json.sh
+
+# This mounts the shared disk drive on the headnode
+source mount_disk.sh

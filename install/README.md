@@ -33,6 +33,10 @@ These instructions will walk through how to set up NeuralDB Enterprise on your c
    - Set `admin_name` to the username used to SSH into each of the nodes in your cluster
    - `admin_mail` and `admin_password` will be your login information to NeuralDB Enterprise
    - Set `genai_key` to the API key for your generative model. Currently, `genai_key` must be an OpenAI key. 
+   - Set `shared_dir` to the location of the shared directory which should be accessible by every node. (leave this field if nodes were set up using our `install-on-azure` script). Useful when neural-db enterprise needs to be installed on private clusters.
+   - Set `setup_nfs`:
+      -  `True`: Sets up a NFS on the shared-directory so that nodes can access each others file (leave this field if nodes were set up using our `install-on-azure` script.)
+      - `False`: Doesn't set up a NFS on the shared-directory. Generally, the nodes of private cluster already have the access of the shared-directory.
 7. Run `bash setup.sh` in the Terminal.
 
 Wait for the setup process to complete (approximately 10 minutes), and you have launched NeuralDB Enterprise on your own Azure VM cluster!

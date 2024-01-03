@@ -16,7 +16,6 @@ if [ -z "$json_key" ]; then
 fi
 
 ips=$(echo $json | jq -r ".${json_key}[]")
-echo $ips
 
 private_headnode_ip=$(jq -r '.PRIVATE_HEADNODE_IP[0]' config.json)
 echo $private_headnode_ip

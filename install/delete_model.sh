@@ -90,7 +90,7 @@ for deployment_id in \${deployment_ids[@]}; do
 done
 psql "$PG_CONN_STRING" -At -c "delete from models where name='$modelname' and user_id='\$user_id';"
 rm -Rf /model_bazaar/models/\$model_id
-rm -Rf /opt/neuraldb_enterprise/model_bazaar/models/\$model_id
+rm -Rf $shared_dir/models/\$model_id
 echo "Deleted resources associated with model $1"
 
 EOF
