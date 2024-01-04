@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Database credentials
 admin_name="admingautam"
 db_password="password"
