@@ -13,6 +13,12 @@ PG_CONN_STRING="postgresql://modelbazaaruser:$PASSWORD@$PRIVATE_SERVER_IP:5432/m
 
 
 ssh "$USERNAME"@$PUBLIC_SERVER_IP <<EOF
+if ! command -v psql &> /dev/null; then
+    echo "psql could not be found. Installing postgresql-client..."
+    sudo apt update
+    sudo apt install postgresql-client -y
+fi
+
 tables=(\$(psql "$PG_CONN_STRING" -At -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
 for table in "\${tables[@]}"; do 
     psql "$PG_CONN_STRING" -c "TRUNCATE TABLE \$table CASCADE;"
@@ -34,8 +40,8 @@ for job in "${jobs[@]}"; do
 done
 
 # Restarting the nomad client and server jobs
-source ../install/run_nomad_scripts.sh server
-source ../install/run_nomad_scripts.sh client
+source run_nomad_scripts.sh server
+source run_nomad_scripts.sh client
 
 # Now we can launch the Model Bazaar jobs onto our nomad cluster 
-source ../install/launch_nomad_jobs.sh
+source launch_nomad_jobs.sh

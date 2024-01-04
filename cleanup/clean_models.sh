@@ -92,7 +92,7 @@ for model_id in "\${result[@]}"; do
     done
 
     echo "Removing model with id: \$model_id"
-    psql "$PG_CONN_STRING" -At -c "Delete from models where id='\$model_id';" > /dev/null
+    psql "$PG_CONN_STRING" -c "Delete from models where id='\$model_id';" > /dev/null
 
     # Stop and purge nomad job
     job_name="train-\$model_id"

@@ -87,7 +87,7 @@ for deployment_id in "\${result[@]}"; do
         curl --silent -X DELETE http://$PUBLIC_SERVER_IP:4646/v1/job/deployment-\$deployment_id?purge=true
     fi
 
-    psql "$PG_CONN_STRING" -At -c "Delete from deployments where id='\$deployment_id';" > /dev/null
+    psql "$PG_CONN_STRING" -c "Delete from deployments where id='\$deployment_id';" > /dev/null
 
 done
 
