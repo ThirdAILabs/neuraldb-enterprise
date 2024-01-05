@@ -9,9 +9,9 @@ This installation assumes the following:
 - Every node can access any other node in the cluster through the nodes' private IPs
 - Every node has at least 8GB of memory and 1 CPU
 
-### Instructions for MacOS
+### Installation Instructions
 
-These instructions will walk through how to set up NeuralDB Enterprise on your cluster from your personal machine. Note that these instructions should not be executed directly on the cluster nodes, but rather on a machine that has SSH access to nodes in the cluster.
+These instructions will walk through how to set up NeuralDB Enterprise on your Linux cluster, using your personal machine as an access point. Note that these instructions should not be executed directly on the cluster nodes, but rather on a machine that has SSH access to nodes in the cluster.
 
 1. Populate `config.json` with the IPs of the nodes in your cluster
    - `HEADNODE_IP` and `PRIVATE_HEADNODE_IP` should be the public and private IPs respectively of one of your nodes. NeuralDB Enterprise's UI will be accessible from `HEADNODE_IP`.
