@@ -23,6 +23,9 @@ else
     # Set up the PostgreSQL server on the Head node, and install the PostgreSQL client on the client nodes
     source setup_postgresql.sh
 
+    #Update the images to the local docker registry.
+    source latest-images.sh
+
     # Now we can launch the Model Bazaar jobs onto our nomad cluster 
     source launch_nomad_jobs.sh
 fi
