@@ -24,10 +24,10 @@ if [ $# -eq 2 ]; then
 fi
 
 
-source variables.sh
+source ../variables.sh
 
-PUBLIC_SERVER_IP="$(jq -r '.HEADNODE_IP | .[0]' config.json)"
-PRIVATE_SERVER_IP="$(jq -r '.PRIVATE_HEADNODE_IP | .[0]' config.json)"
+PUBLIC_SERVER_IP="$(jq -r '.HEADNODE_IP | .[0]' ../config.json)"
+PRIVATE_SERVER_IP="$(jq -r '.PRIVATE_HEADNODE_IP | .[0]' ../config.json)"
 
 PASSWORD=$db_password
 USERNAME=$admin_name

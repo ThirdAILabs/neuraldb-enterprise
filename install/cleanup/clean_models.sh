@@ -24,10 +24,10 @@ if [ $# -eq 2 ]; then
 fi
 
 
-source variables.sh
+source ../variables.sh
 
-PUBLIC_SERVER_IP="$(jq -r '.HEADNODE_IP | .[0]' config.json)"
-PRIVATE_SERVER_IP="$(jq -r '.PRIVATE_HEADNODE_IP | .[0]' config.json)"
+PUBLIC_SERVER_IP="$(jq -r '.HEADNODE_IP | .[0]' ../config.json)"
+PRIVATE_SERVER_IP="$(jq -r '.PRIVATE_HEADNODE_IP | .[0]' ../config.json)"
 
 PASSWORD=$db_password
 USERNAME=$admin_name
@@ -41,44 +41,57 @@ mkdir \$cleanup_dir 2>/dev/null
 sudo tee \$cleanup_dir/clean_models.sh > /dev/null <<'EOD'
 #!/bin/bash
 set -e
+EOD
 
 if ! command -v psql &> /dev/null; then
-    echo "psql could not be found. Installing postgresql-client..."
-    sudo apt update
-    sudo apt install postgresql-client -y
+    sudo tee -a \$cleanup_dir/clean_models.sh > /dev/null <<'EOD'
+
+echo "psql could not be found. Installing postgresql-client..."
+sudo apt update
+sudo apt install postgresql-client -y
+EOD
+
 fi
 
 # fetching the records
 if [ -n "$model_id" ]; then
-    query="select id from models where train_status='$status' and id='$model_id';"
-    result=(\$(psql "$PG_CONN_STRING" -At -c "\$query"))
+    sudo tee -a \$cleanup_dir/clean_models.sh > /dev/null <<'EOD'
 
-    if [ -z "\$result" ]; then
-        echo "No deployment exists with status $status and deployment id: $model_id"
-        exit 1
-    fi
-else
-    echo -n "Are you sure to delete all models with status $status? (y/n)"
-    while true; do
-        read answer
-        case "\$answer" in
-            [Yy])
-                break
-                ;;
-            [Nn])
-                echo "exiting..."
-                exit 1
-                ;;
-            *)
-                echo -n "Invalid choice. Please enter 'y' or 'n'."
-                ;;
-        esac
-    done
-    
-    query="select id from models where train_status='$status';"
-    result=(\$(psql "$PG_CONN_STRING" -At -c "\$query"))
+query="select id from models where train_status='$status' and id='$model_id';"
+result=(\$(psql "$PG_CONN_STRING" -At -c "\$query"))
+
+
+if [ -z "\$result" ]; then
+    echo "No deployment exists with status $status and deployment id: $model_id"
+    exit 1
 fi
+EOD
+else
+    sudo tee -a \$cleanup_dir/clean_models.sh > /dev/null <<'EOD'
 
+echo -n "Are you sure to delete all models with status $status? (y/n)"
+while true; do
+    read answer
+    case "\$answer" in
+        [Yy])
+            break
+            ;;
+        [Nn])
+            echo "exiting..."
+            exit 1
+            ;;
+        *)
+            echo -n "Invalid choice. Please enter 'y' or 'n'."
+            ;;
+    esac
+done
+
+query="select id from models where train_status='$status';"
+result=(\$(psql "$PG_CONN_STRING" -At -c "\$query"))
+EOD
+
+fi
+sudo tee -a \$cleanup_dir/clean_models.sh > /dev/null <<'EOD'
 for model_id in "\${result[@]}"; do
     # Removing the deployements of the model with model_id
     deployment_ids=(\$(psql "$PG_CONN_STRING" -At -c "select id from deployments where model_id='\$model_id';"))
@@ -88,7 +101,7 @@ for model_id in "\${result[@]}"; do
         if [[ "\$response" =~ ^[Yy]$ ]]; then
             curl --silent -X DELETE http://$PUBLIC_SERVER_IP:4646/v1/job/deployment-\$deployment_id?purge=true
         fi
-        
+                
     done
 
     echo "Removing model with id: \$model_id"
@@ -99,9 +112,10 @@ for model_id in "\${result[@]}"; do
     curl --silent -X DELETE http://$PUBLIC_SERVER_IP:4646/v1/job/\$job_name?purge=true
 
     rm -rf $shared_dir/models/\$model_id
-done
 
+done
 EOD
+
 EOF
 
 echo "Follow these setps: "
