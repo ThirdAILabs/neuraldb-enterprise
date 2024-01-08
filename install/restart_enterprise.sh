@@ -7,29 +7,22 @@ source variables.sh
 PUBLIC_SERVER_IP="$(jq -r '.HEADNODE_IP | .[0]' config.json)"
 PRIVATE_SERVER_IP="$(jq -r '.PRIVATE_HEADNODE_IP | .[0]' config.json)"
 
+DATABASE_DIR=$database_dir
 PASSWORD=$db_password
 USERNAME=$admin_name
 PG_CONN_STRING="postgresql://modelbazaaruser:$PASSWORD@$PRIVATE_SERVER_IP:5432/modelbazaar"
 
 
 ssh "$USERNAME"@$PUBLIC_SERVER_IP <<EOF
-if ! command -v psql &> /dev/null; then
-    echo "psql could not be found. Installing postgresql-client..."
-    sudo apt update
-    sudo apt install postgresql-client -y
-fi
 
-tables=(\$(psql "$PG_CONN_STRING" -At -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
-for table in "\${tables[@]}"; do 
-    psql "$PG_CONN_STRING" -c "TRUNCATE TABLE \$table CASCADE;"
-done
-EOF
+# clearing the database
+sudo rm -rf $DATABASE_DIR/data
+sudo docker restart neuraldb-enterprise-database
 
-# Cleaning the nfs directory
-ssh "$USERNAME"@$PUBLIC_SERVER_IP <<EOF
-rm -rf $shared_dir/data/*
-rm -rf $shared_dir/models/*
-rm -rf $shared_dir/users/*
+# clearning the shared_dir
+sudo rm -rf $shared_dir/data/*
+sudo rm -rf $shared_dir/models/*
+sudo rm -rf $shared_dir/users/*
 EOF
 
 # Stopping and purging nomad jobs
