@@ -24,7 +24,7 @@ else
     source setup_postgresql.sh
 
     #Update the images to the local docker registry.
-    source latest-images.sh
+    source docker-images.sh
 
     # Now we can launch the Model Bazaar jobs onto our nomad cluster 
     source launch_nomad_jobs.sh

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the image details
-IMAGES=("model-bazaar"  "search-ui-job")
+IMAGES=("model-bazaar"  "search-ui-job" "neuraldb-deploy" "neuraldb-train" "neuraldb-rlhf-update")
 DOCKERNAME="NomadToken"
 DOCKERPASSWORD="FO15fMI9CxZFn8fLL45ZiphDhNAA8SBGaHjfRCZHD0+ACRBr3VLA"
 SERVER_ADDRESS="thirdaistaging.azurecr.io"
