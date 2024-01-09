@@ -23,6 +23,7 @@
     * [undeploy](#bazaar_client.ModelBazaar.undeploy)
     * [list\_deployments](#bazaar_client.ModelBazaar.list_deployments)
     * [connect](#bazaar_client.ModelBazaar.connect)
+    * [delete](#bazaar_client.ModelBazaar.delete)
 
 <a id="bazaar_client"></a>
 
@@ -88,13 +89,13 @@ A client for interacting with the deployed NeuralDB model.
   insert(self, files: List[str]) -> None:
   Inserts documents into the ndb model.
   
-  associate(self, query1: str, query2: str) -> None:
-  Associates two queries in the ndb model.
+  associate(self, text_pairs (List[Dict[str, str]])) -> None:
+  Associates source and target string pairs in the ndb model.
   
-  upvote(self, query_id: UUID, query_text: str, reference: dict) -> None:
+  upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
   Upvotes a response in the ndb model.
   
-  downvote(self, query_id: UUID, query_text: str, reference: dict) -> None:
+  downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
   Downvotes a response in the ndb model.
 
 <a id="bazaar_client.NeuralDBClient.__init__"></a>
@@ -131,7 +132,7 @@ Searches the ndb model for similar queries.
 
 **Returns**:
 
-- `List[dict]` - A list of search results.
+- `Dict` - A dict of search results containing keys: `query_text` and `references`.
 
 <a id="bazaar_client.NeuralDBClient.insert"></a>
 
@@ -154,15 +155,14 @@ Inserts documents into the ndb model.
 
 ```python
 @check_deployment_decorator
-def associate(query1: str, query2: str)
+def associate(text_pairs: List[Dict[str, str]])
 ```
 
-Associates two queries in the ndb model.
+Associates source and target string pairs in the ndb model.
 
 **Arguments**:
 
-- `query1` _str_ - The first query.
-- `query2` _str_ - The second query.
+- `text_pairs` _List[Dict[str, str]]_ - List of dictionaries where each dictionary has 'source' and 'target' keys.
 
 <a id="bazaar_client.NeuralDBClient.upvote"></a>
 
@@ -170,16 +170,14 @@ Associates two queries in the ndb model.
 
 ```python
 @check_deployment_decorator
-def upvote(query_id: UUID, query_text: str, reference: dict)
+def upvote(text_id_pairs: List[Dict[str, Union[str, int]]])
 ```
 
-Upvotes a response in the ndb model.
+Upvote response with 'reference_id' corresponding to 'query_text' in the ndb model.
 
 **Arguments**:
 
-- `query_id` _UUID_ - The ID of the query.
-- `query_text` _str_ - The text of the query.
-- `reference` _dict_ - A dictionary containing the reference information.
+- `text_id_pairs` - (List[Dict[str, Union[str, int]]]): List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
 
 <a id="bazaar_client.NeuralDBClient.downvote"></a>
 
@@ -187,16 +185,14 @@ Upvotes a response in the ndb model.
 
 ```python
 @check_deployment_decorator
-def downvote(query_id: UUID, query_text: str, reference: dict)
+def downvote(text_id_pairs: List[Dict[str, Union[str, int]]])
 ```
 
-Downvotes a response in the ndb model.
+Downvote response with 'reference_id' corresponding to 'query_text' in the ndb model.
 
 **Arguments**:
 
-- `query_id` _UUID_ - The ID of the query.
-- `query_text` _str_ - The text of the query.
-- `reference` _dict_ - A dictionary containing the reference information.
+- `text_id_pairs` - (List[Dict[str, Union[str, int]]]): List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
 
 <a id="bazaar_client.ModelBazaar"></a>
 
@@ -473,3 +469,16 @@ Connects to a deployed model and returns a NeuralDBClient instance.
 
 - `NeuralDBClient` - A NeuralDBClient instance.
 
+<a id="bazaar_client.ModelBazaar.delete"></a>
+
+#### delete
+
+```python
+def delete(model_identifier: str)
+```
+
+Submits a request for model deletion for the administrator's review.
+
+**Arguments**:
+
+- `model_identifier` _str_ - The identifier of the model
