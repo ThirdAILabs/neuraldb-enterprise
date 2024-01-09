@@ -27,7 +27,7 @@ These instructions assume that you already have the enterprise cluster set up, a
     - **Deployment_id:** Find it on the Nomad UI job using the following instructions:
         * a. Go to http://<`head node ip`>:4646/
         * b. Open the `Jobs` tab
-        * c. The required deployment will be `train-<deployment_id>`
+        * c. The required deployment will be `deployment-<deployment_id>`
 
    **Default:** `All`. Delete all deployments with the given status.
 
