@@ -39,7 +39,7 @@ These instructions will walk through how to set up NeuralDB Enterprise on your L
       - `False`: Doesn't set up a NFS on the shared-directory. Generally, the nodes of private cluster already have the access of the shared-directory.
 7. Run `bash setup.sh` in the Terminal.
 
-Wait for the setup process to complete (approximately 10 minutes), and you have launched NeuralDB Enterprise on your own Azure VM cluster!
+Wait for the setup process to complete (approximately 10 minutes), and you have launched NeuralDB Enterprise on your own VM cluster!
 
 Paste the `HEADNODE_IP` into your browser, and you should see a login screen, where you can create an account, verify your email, and start training NeuralDB's! An admin account will already be created for you using `admin_mail` and `admin_password` as the login credentials.
 
