@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source variables.sh
+
 # Creates a resource group
 echo "Creating a resource group with the name $resource_group_name..."
 az group create --location $location --name $resource_group_name
@@ -41,10 +43,9 @@ az vm create \
   --location $location \
   --image Ubuntu2204 \
   --nics NomadHeadNic \
-  --admin-username $admin_name \
+  --admin-username $ssh_username \
   --generate-ssh-keys \
   --size $vm_type \
-  --data-disk-sizes-gb 100
 
 # This creates a new disk attached to the Head Node on which nfs will be initialized
 echo "Creating data disk.."
@@ -64,9 +65,10 @@ do
     --resource-group $resource_group_name \
     --name Node$i \
     --image Ubuntu2204 \
-    --admin-username $admin_name \
+    --admin-username $ssh_username \
     --generate-ssh-keys \
-    --size $vm_type
+    --size $vm_type \
+    --public-ip-address ""
 done
 
 

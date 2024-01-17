@@ -30,7 +30,7 @@ These instructions will walk through how to set up NeuralDB Enterprise on your L
 5. Navigate into the `install` directory in this repository.
 6. Edit the `variables.sh` file to reflect your desired settings. 
    - Ensure that `license_path` is set correctly to a path on your machine. This should point to the NeuralDB Enterprise License that you recieved in an email.
-   - Set `admin_name` to the username used to SSH into each of the nodes in your cluster
+   - Set `ssh_username` to the username used to SSH into each of the nodes in your cluster
    - `admin_mail` and `admin_password` will be your login information to NeuralDB Enterprise
    - Set `genai_key` to the API key for your generative model. Currently, `genai_key` must be an OpenAI key. 
    - Set `shared_dir` to the location of the shared directory which should be accessible by every node. (leave this field if nodes were set up using our `install-on-azure` script). Useful when neural-db enterprise needs to be installed on private clusters.

@@ -1,60 +1,35 @@
 #!/bin/bash
 
-PUBLIC_IPS=()
+sql_server_private_ip=$(jq -r '.nodes[] | select(has("sql_server")) | .private_ip' config.json)
+sql_server_database_dir=$(jq -r '.nodes[] | select(has("sql_server")) | .sql_server.database_dir' config.json)
+sql_server_database_password=$(jq -r '.nodes[] | select(has("sql_server")) | .sql_server.database_dir' config.json)
+sql_client_private_ips=($(jq -r --arg ip "$sql_server_private_ip" '.nodes[] | select(.private_ip != $ip) | .private_ip' config.json))
 
-json=$(<config.json)
+web_ingress_private_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .private_ip' config.json)
+web_ingress_public_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .web_ingress.public_ip' config.json)
 
-nodes=("HEADNODE_IP" "CLIENTNODE_IP")
-for node in "${nodes[@]}"; do
-    echo "$node"
-    ips=($(echo $json | jq -r ".${node}[]"))
-    for ip in "${ips[@]}"; do
-        PUBLIC_IPS+=("$ip")
-    done
-done
+node_ssh_username=$(jq -r '.ssh_username' config.json)
+web_ingress_ssh_username=$(jq -r '.nodes[] | select(has("web_ingress")) | .web_ingress.ssh_username' config.json)
 
-
-PRIVATE_IPS=()
-
-json=$(<config.json)
-
-nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_CLIENTNODE_IP")
-for node in "${nodes[@]}"; do
-    echo "$node"
-    ips=($(echo $json | jq -r ".${node}[]"))
-    for ip in "${ips[@]}"; do
-        PRIVATE_IPS+=("$ip")
-    done
-done
-
-# NFS Server Configuration
-PUBLIC_SERVER_IP="${PUBLIC_IPS[0]}"
-PRIVATE_SERVER_IP="${PRIVATE_IPS[0]}"
+if [ $web_ingress_private_ip == $sql_server_private_ip ]; then
+    sql_server_ssh_command="ssh -o StrictHostKeyChecking=no $web_ingress_ssh_username@$web_ingress_public_ip"
+else
+    sql_server_ssh_command="ssh -o StrictHostKeyChecking=no -J $web_ingress_ssh_username@$web_ingress_public_ip $node_ssh_username@$sql_server_private_ip"
+fi
 
 
-# Array of NFS Client IPs
-PUBLIC_CLIENT_IPS=("${PUBLIC_IPS[@]:1}")
-PRIVATE_CLIENT_IPS=("${PRIVATE_IPS[@]:1}")
-
-# PostgreSQL Configuration
-DATABASE_DIR=$database_dir
-PASSWORD=$db_password
-
-# SSH creds
-USERNAME=$admin_name
-
-ssh "$USERNAME"@$PUBLIC_SERVER_IP <<EOF
+$sql_server_ssh_command <<EOF
 set -e
 
-sudo mkdir -p $DATABASE_DIR/docker-postgres-init
-sudo mkdir -p $DATABASE_DIR/data
-cd $DATABASE_DIR/docker-postgres-init
+sudo mkdir -p $sql_server_database_dir/docker-postgres-init
+sudo mkdir -p $sql_server_database_dir/data
+cd $sql_server_database_dir/docker-postgres-init
 
 sudo tee init-db.sh > /dev/null <<'EOD'
 #!/bin/bash
 {
     echo "host  all all 172.17.0.0/16  md5"
-    for IP in ${PRIVATE_CLIENT_IPS[@]}; do
+    for IP in ${sql_client_private_ips[@]}; do
         echo "host  all all \$IP/32  md5"
     done
 } >> "\$PGDATA/pg_hba.conf"
@@ -64,16 +39,16 @@ sudo chmod +x init-db.sh
 
 sudo docker pull postgres
 
-sudo docker stop neuraldb-enterprise-database || true
-sudo docker rm neuraldb-enterprise-database || true
+sudo docker stop neuraldb-enterprise-postgresql-server || true
+sudo docker rm neuraldb-enterprise-postgresql-server || true
 
 sudo docker run -d \
-  --name neuraldb-enterprise-database \
-  -e POSTGRES_PASSWORD=$PASSWORD \
+  --name neuraldb-enterprise-postgresql-server \
+  -e POSTGRES_PASSWORD=$sql_server_database_password \
   -e POSTGRES_DB=modelbazaar \
   -e POSTGRES_USER=modelbazaaruser \
-  -v $DATABASE_DIR/docker-postgres-init:/docker-entrypoint-initdb.d \
-  -v $DATABASE_DIR/data:/var/lib/postgresql/data \
+  -v $sql_server_database_dir/docker-postgres-init:/docker-entrypoint-initdb.d \
+  -v $sql_server_database_dir/data:/var/lib/postgresql/data \
   -p 5432:5432 \
   postgres
 

@@ -1,48 +1,39 @@
 #! /bin/bash
 
-PUBLIC_NFS_IPS=()
+node_private_ips=($(jq -r '.nodes[].private_ip' config.json))
 
-json=$(<config.json)
+web_ingress_private_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .private_ip' config.json)
+web_ingress_public_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .web_ingress.public_ip' config.json)
 
-nodes=("HEADNODE_IP" "CLIENTNODE_IP")
-for node in "${nodes[@]}"; do
-    ips=($(echo $json | jq -r ".${node}[]"))
-    for ip in "${ips[@]}"; do
-        PUBLIC_NFS_IPS+=("$ip")
-    done
-done
+node_ssh_username=$(jq -r '.ssh_username' config.json)
+web_ingress_ssh_username=$(jq -r '.nodes[] | select(has("web_ingress")) | .web_ingress.ssh_username' config.json)
 
-# NFS Server Configuration
-PUBLIC_NFS_SERVER_IP="${PUBLIC_NFS_IPS[0]}"
-
-# Array of NFS Client IPs
-PUBLIC_NFS_CLIENT_IPS=("${PUBLIC_NFS_IPS[@]:1}")
-
+shared_dir=$(jq -r '.nodes[] | select(has("shared_file_system")) | .shared_file_system.shared_dir' config.json)
 
 # User
-USERNAME=$admin_name
 status_filename="node_status"
 status_file_loc="$shared_dir/$status_filename"
 
-# Headnode connectivity check
-ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP <<EOF
-    echo "$PUBLIC_NFS_SERVER_IP | success" | sudo tee $status_file_loc
-EOF
+for node_private_ip in "${node_private_ips[@]}"; do
+    if [ $web_ingress_private_ip == $node_private_ip ]; then
+        node_ssh_command="ssh -o StrictHostKeyChecking=no $web_ingress_ssh_username@$web_ingress_public_ip"
+    else
+        node_ssh_command="ssh -o StrictHostKeyChecking=no -J $web_ingress_ssh_username@$web_ingress_public_ip $node_ssh_username@$node_private_ip"
+    fi
 
-# Client node connectivity check
-for CLIENT_IP in "${PUBLIC_NFS_CLIENT_IPS[@]}"; do
-    ssh -o StrictHostKeyChecking=no "$USERNAME"@$CLIENT_IP <<EOF
-echo "$CLIENT_IP | success" | sudo tee -a $status_file_loc
+    $node_ssh_command <<EOF
+        echo "$node_private_ip | success" | sudo tee -a $status_file_loc
 EOF
 done
 
+
 # copying node_status file into local directory
 
-scp "$USERNAME"@$PUBLIC_NFS_SERVER_IP:$status_file_loc .
+scp "$web_ingress_ssh_username"@$web_ingress_public_ip:$status_file_loc .
 
 line_count=$(wc -l "$status_filename" | awk '{print $1}')
 
-if [ $line_count -ne ${#PUBLIC_NFS_IPS[@]} ]; then
+if [ $line_count -ne ${#node_private_ips[@]} ]; then
     echo "Shared directory is not accessible by every node"
     exit 1
 else
@@ -50,5 +41,5 @@ else
 fi
 
 # Removing node_status file from shared_dir
-ssh -o StrictHostKeyChecking=no "$USERNAME"@$PUBLIC_NFS_SERVER_IP "sudo rm -f $status_file_loc"
+ssh -o StrictHostKeyChecking=no "$web_ingress_ssh_username"@$web_ingress_public_ip "sudo rm -f $status_file_loc"
 rm -f $status_filename

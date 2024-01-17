@@ -21,45 +21,25 @@ fi
 
 source variables.sh
 
-PUBLIC_IPS=()
+sql_server_private_ip=$(jq -r '.nodes[] | select(has("sql_server")) | .private_ip' config.json)
+sql_server_database_password=$(jq -r '.nodes[] | select(has("sql_server")) | .sql_server.database_dir' config.json)
 
-json=$(<config.json)
+web_ingress_private_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .private_ip' config.json)
+web_ingress_public_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .web_ingress.public_ip' config.json)
 
-nodes=("HEADNODE_IP" "CLIENTNODE_IP")
-for node in "${nodes[@]}"; do
-    ips=($(echo $json | jq -r ".${node}[]"))
-    for ip in "${ips[@]}"; do
-        PUBLIC_IPS+=("$ip")
-    done
-done
+node_ssh_username=$(jq -r '.ssh_username' config.json)
+web_ingress_ssh_username=$(jq -r '.nodes[] | select(has("web_ingress")) | .web_ingress.ssh_username' config.json)
 
-
-PRIVATE_IPS=()
-
-json=$(<config.json)
-
-nodes=("PRIVATE_HEADNODE_IP" "PRIVATE_CLIENTNODE_IP")
-for node in "${nodes[@]}"; do
-    ips=($(echo $json | jq -r ".${node}[]"))
-    for ip in "${ips[@]}"; do
-        PRIVATE_IPS+=("$ip")
-    done
-done
-
-# NFS Server Configuration
-PUBLIC_SERVER_IP="${PUBLIC_IPS[0]}"
-PRIVATE_SERVER_IP="${PRIVATE_IPS[0]}"
+if [ $web_ingress_private_ip == $sql_server_private_ip ]; then
+    sql_server_ssh_command="ssh -o StrictHostKeyChecking=no $web_ingress_ssh_username@$web_ingress_public_ip"
+else
+    sql_server_ssh_command="ssh -o StrictHostKeyChecking=no -J $web_ingress_ssh_username@$web_ingress_public_ip $node_ssh_username@$sql_server_private_ip"
+fi
 
 
-# Array of NFS Client IPs
-PUBLIC_CLIENT_IPS=("${PUBLIC_IPS[@]:1}")
-PRIVATE_CLIENT_IPS=("${PRIVATE_IPS[@]:1}")
+pg_conn_string="postgresql://modelbazaaruser:$sql_server_database_password@$sql_server_private_ip:5432/modelbazaar"
 
-PASSWORD=$db_password
-USERNAME=$admin_name
-PG_CONN_STRING="postgresql://modelbazaaruser:$PASSWORD@$PRIVATE_SERVER_IP:5432/modelbazaar"
-
-ssh "$USERNAME"@$PUBLIC_SERVER_IP <<EOF
+$sql_server_ssh_command <<EOF
 set -e
 
 if ! command -v psql &> /dev/null; then
@@ -68,13 +48,13 @@ if ! command -v psql &> /dev/null; then
     sudo apt install postgresql-client -y
 fi
 
-user_id=\$(psql "$PG_CONN_STRING" -At -c "select id from users where username='$model_username';")
+user_id=\$(psql "$pg_conn_string" -At -c "select id from users where username='$model_username';")
 if [ -z "\$user_id" ]; then
     echo "The user doesn't exist"
     exit
 fi
 
-model_id=\$(psql "$PG_CONN_STRING" -At -c "select id from models where name='$modelname' and user_id='\$user_id';")
+model_id=\$(psql "$pg_conn_string" -At -c "select id from models where name='$modelname' and user_id='\$user_id';")
 if [ -z "\$model_id" ]; then
     echo "The model doesn't exist."
     exit
@@ -83,12 +63,12 @@ fi
 echo "Found model $1"
 echo "Deleting resources associated with model $1..."
 
-deployment_ids=(\$(psql "$PG_CONN_STRING" -At -c "select id from deployments where model_id='\$model_id';"))
+deployment_ids=(\$(psql "$pg_conn_string" -At -c "select id from deployments where model_id='\$model_id';"))
 for deployment_id in \${deployment_ids[@]}; do
     echo "Deleting deployment deployment-\$deployment_id"
     curl -X DELETE "http://localhost:4646/v1/job/deployment-\$deployment_id"
 done
-psql "$PG_CONN_STRING" -At -c "delete from models where name='$modelname' and user_id='\$user_id';"
+psql "$pg_conn_string" -At -c "delete from models where name='$modelname' and user_id='\$user_id';"
 rm -Rf /model_bazaar/models/\$model_id
 rm -Rf $shared_dir/models/\$model_id
 echo "Deleted resources associated with model $1"

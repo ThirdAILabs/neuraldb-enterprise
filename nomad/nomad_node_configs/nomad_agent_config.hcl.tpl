@@ -2,13 +2,15 @@ data_dir  = "/opt/nomad/data"
 bind_addr = "0.0.0.0"
 
 server {
-  enabled = false
+  enabled = $SERVER_ENABLED
+  bootstrap_expect = 1
 }
 
 client {
-  enabled = true
+  node_pool = "$NODE_POOL_STRING"
+  enabled = $CLIENT_ENABLED
   server_join {
-    retry_join = [""]
+    retry_join = ["$NOMAD_SERVER_PRIVATE_IP"]
     retry_max = 3
     retry_interval = "15s"
   }
