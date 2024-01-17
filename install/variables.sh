@@ -6,7 +6,7 @@ jwt_secret="1234"  # this should be a password-like string
 admin_mail="kartik@thirdai.com"
 admin_username="kartik"
 admin_password="password"
-genai_key="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"
+genai_key="key-for-generative-ai"
 
 # Application autoscaling parameters
 autoscaling_enabled=false
