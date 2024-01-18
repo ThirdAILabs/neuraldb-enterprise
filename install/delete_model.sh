@@ -22,7 +22,7 @@ fi
 source variables.sh
 
 sql_server_private_ip=$(jq -r '.nodes[] | select(has("sql_server")) | .private_ip' config.json)
-sql_server_database_password=$(jq -r '.nodes[] | select(has("sql_server")) | .sql_server.database_dir' config.json)
+sql_server_database_password=$(jq -r '.nodes[] | select(has("sql_server")) | .sql_server.database_password' config.json)
 
 web_ingress_private_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .private_ip' config.json)
 web_ingress_public_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .web_ingress.public_ip' config.json)

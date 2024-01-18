@@ -3,7 +3,7 @@ job "traefik" {
 
   type = "service"
 
-  node_pool = "web_ingress"
+  node_pool = "{{ NODE_POOL }}"
 
   group "traefik" {
     count = 1
