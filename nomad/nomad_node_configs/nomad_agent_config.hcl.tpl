@@ -7,7 +7,7 @@ server {
 }
 
 client {
-  node_pool = "$NODE_POOL_STRING"
+  node_pool = "$NODE_POOL"
   enabled = $CLIENT_ENABLED
   server_join {
     retry_join = ["$NOMAD_SERVER_PRIVATE_IP"]
