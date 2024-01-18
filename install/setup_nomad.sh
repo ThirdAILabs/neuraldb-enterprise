@@ -68,7 +68,7 @@ for node_private_ip in "${node_private_ips[@]}"; do
         else
             # If the directory does not exist, clone the repository
             echo "Cloning repository..."
-            git clone "$repo_url" && cd "$repo_dir"
+            git clone -b refactor "$repo_url" && cd "$repo_dir"
         fi
 EOF
 done
