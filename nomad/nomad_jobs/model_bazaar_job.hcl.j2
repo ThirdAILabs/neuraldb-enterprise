@@ -45,12 +45,12 @@ job "modelbazaar" {
       }
 
       config {
-        image = "thirdaistaging.azurecr.io/model_bazaar:v0.0.1"
+        image = "thirdaistaging.azurecr.io/model_bazaar:latest"
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {
-          username = "ReleaseJob"
-          password = "wM1MhodB+abNhYwKMaXGFezp+XMsJL4FNlSscNgHZ0+ACRA7ssNL"
+          username = "neuraldb-enterprise-pull"
+          password = "gBDFl4+eOCPTKbK2IRPZc4AX38AcMcqb/M38DVWjkv+ACRC2srjF"
           server_address = "thirdaistaging.azurecr.io"
         }
         volumes = [
