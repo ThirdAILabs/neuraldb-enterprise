@@ -3,6 +3,11 @@ job "traefik" {
 
   type = "service"
 
+  constraint {
+    attribute = "${node.class}"
+    value = "web_ingress"
+  }
+
   node_pool = "{{ NODE_POOL }}"
 
   group "traefik" {
