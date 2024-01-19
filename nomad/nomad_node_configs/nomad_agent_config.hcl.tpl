@@ -7,6 +7,7 @@ server {
 }
 
 client {
+  $NODE_CLASS_STRING
   node_pool = "$NODE_POOL"
   enabled = $CLIENT_ENABLED
   server_join {

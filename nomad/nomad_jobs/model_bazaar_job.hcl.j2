@@ -45,12 +45,12 @@ job "modelbazaar" {
       }
 
       config {
-        image = "thirdaistaging.azurecr.io/model-bazaar:latest"
+        image = "thirdaistaging.azurecr.io/model_bazaar:v0.0.1"
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {
-          username = "NomadToken"
-          password = "FO15fMI9CxZFn8fLL45ZiphDhNAA8SBGaHjfRCZHD0+ACRBr3VLA"
+          username = "ReleaseJob"
+          password = "wM1MhodB+abNhYwKMaXGFezp+XMsJL4FNlSscNgHZ0+ACRA7ssNL"
           server_address = "thirdaistaging.azurecr.io"
         }
         volumes = [
