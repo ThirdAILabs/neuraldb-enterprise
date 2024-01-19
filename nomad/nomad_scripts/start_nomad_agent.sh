@@ -8,7 +8,7 @@ export SERVER_ENABLED=$1
 export CLIENT_ENABLED=$2
 export NODE_POOL=$3
 
-if [ "$4" == "default" ]; then
+if [ "$4" != "default" ]; then
     export NODE_CLASS_STRING="node_class = \"${4}\""
 else
     export NODE_CLASS_STRING=""
