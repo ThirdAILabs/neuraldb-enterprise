@@ -88,13 +88,13 @@ A client for interacting with the deployed NeuralDB model.
   insert(self, files: List[str]) -> None:
   Inserts documents into the ndb model.
   
-  associate(self, query1: str, query2: str) -> None:
-  Associates two queries in the ndb model.
+  associate(self, text_pairs: List[Dict[str, str]]) -> None:
+  Associates source and target string pairs in the ndb model.
   
-  upvote(self, query_id: UUID, query_text: str, reference: dict) -> None:
+  upvote(self, text_id_pairs: List[Dict[str, str | int]]) -> None:
   Upvotes a response in the ndb model.
   
-  downvote(self, query_id: UUID, query_text: str, reference: dict) -> None:
+  downvote(self, text_id_pairs: List[Dict[str, str | int]]) -> None:
   Downvotes a response in the ndb model.
 
 <a id="bazaar_client.NeuralDBClient.__init__"></a>
@@ -229,7 +229,7 @@ A class representing ModelBazaar, providing functionality for managing models an
   list_models(self) -> List[dict]:
   Lists available models in the Model Bazaar.
   
-  train(self, model_name: str, docs: List[str], doc_type: str = "local", is_async: bool = False, base_model_identifier: str = None) -> Model:
+  train(self, model_name: str, docs: List[str], doc_type: str = "local", sharded: bool = False, is_async: bool = False, base_model_identifier: str = None, train_extra_options: dict = {}) -> Model:
   Initiates training for a model and returns a Model instance.
   
   await_train(self, model: Model) -> None:
