@@ -131,7 +131,7 @@ Searches the ndb model for similar queries.
 
 **Returns**:
 
-- `List[dict]` - A list of search results.
+-  `Dict` - A dict of search results containing keys: `query_text` and `references`.
 
 <a id="bazaar_client.NeuralDBClient.insert"></a>
 
@@ -154,15 +154,14 @@ Inserts documents into the ndb model.
 
 ```python
 @check_deployment_decorator
-def associate(query1: str, query2: str)
+def associate(text_pairs: List[Dict[str, str]])
 ```
 
-Associates two queries in the ndb model.
+Associates source and target string pairs in the ndb model.
 
 **Arguments**:
 
-- `query1` _str_ - The first query.
-- `query2` _str_ - The second query.
+- `text_pairs` _List[Dict[str, str]]_ - List of dictionaries where each dictionary has `source` and `target` keys.
 
 <a id="bazaar_client.NeuralDBClient.upvote"></a>
 
@@ -170,16 +169,14 @@ Associates two queries in the ndb model.
 
 ```python
 @check_deployment_decorator
-def upvote(query_id: UUID, query_text: str, reference: dict)
+def upvote(text_id_pairs: List[Dict[str, str | int]])
 ```
 
 Upvotes a response in the ndb model.
 
 **Arguments**:
 
-- `query_id` _UUID_ - The ID of the query.
-- `query_text` _str_ - The text of the query.
-- `reference` _dict_ - A dictionary containing the reference information.
+- `text_id_pairs` _List[Dict[str, Union[str, int]]]_ -  List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
 
 <a id="bazaar_client.NeuralDBClient.downvote"></a>
 
@@ -187,16 +184,14 @@ Upvotes a response in the ndb model.
 
 ```python
 @check_deployment_decorator
-def downvote(query_id: UUID, query_text: str, reference: dict)
+def downvote(text_id_pairs: List[Dict[str, str | int]])
 ```
 
 Downvotes a response in the ndb model.
 
 **Arguments**:
 
-- `query_id` _UUID_ - The ID of the query.
-- `query_text` _str_ - The text of the query.
-- `reference` _dict_ - A dictionary containing the reference information.
+- `text_id_pairs` _List[Dict[str, Union[str, int]]]_ -  List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
 
 <a id="bazaar_client.ModelBazaar"></a>
 
@@ -358,8 +353,10 @@ Lists available models in the Model Bazaar.
 def train(model_name: str,
           docs: List[str],
           doc_type: str = "local",
+          sharded: bool = False,
           is_async: bool = False,
-          base_model_identifier: str = None)
+          base_model_identifier: str = None,
+          train_extra_options: dict = {})
 ```
 
 Initiates training for a model and returns a Model instance.
@@ -369,8 +366,20 @@ Initiates training for a model and returns a Model instance.
 - `model_name` _str_ - The name of the model.
 - `docs` _List[str]_ - A list of document paths for training.
 - `doc_type` _str_ - Specifies document location type : "local"(default), "nfs" or "s3".
+- `sharded` _bool_ - Single or mixture of model training (default is False).
 - `is_async` _bool_ - Whether training should be asynchronous (default is False).
 - `base_model_identifier` _str_ - The identifier of the base model (optional).
+- `train_extra_options` _dict_ - Describes required parameters of sharded training :
+    * num_model_shards : number of shards in which data is divided; one model trains on each data shard.
+    * allocation_memory: amount of memory(in MBs) to assign for data sharding job. (Suggested : 10x data size)
+    * model_cores      : cpu cores to be allocated for each model train job.
+    * model_memory     : amount of memory(in MBs) to assign for each data train job.
+    * fhr              : input_dimension for individual model.
+    * embedding_dim    : hidden_dimension for individual model.
+    * output_dim       : output_dimension for individual model.
+    * max_in_memory_batches    : number of batches to train in one iteration.
+
+    * In case of using .csv documents, user must provide required values for `csv_*` fields : `csv_id_column`, `csv_strong_columns`, `csv_weak_columns` and `csv_reference_columns`.
   
 
 **Returns**:
