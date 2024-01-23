@@ -4,11 +4,13 @@ bind_addr = "0.0.0.0"
 server {
   enabled = true
   bootstrap_expect = 1
-  preemption_config {
-    batch_scheduler_enabled    = true
-    system_scheduler_enabled   = true
-    service_scheduler_enabled  = false
-    sysbatch_scheduler_enabled = false
+  default_scheduler_config {
+    preemption_config {
+      batch_scheduler_enabled    = true
+      system_scheduler_enabled   = true
+      service_scheduler_enabled  = false
+      sysbatch_scheduler_enabled = false
+    }
   }
 }
 
