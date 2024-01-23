@@ -17,7 +17,7 @@ NeuralDB Enterprise is built on top of Hashicorp Nomad (https://www.nomadproject
 
 Nomad acts as a middleware, where the Nomad Server allocates jobs to Nomad Clients that have free resources. You can think of Nomad as a black box, where we can submit a script to run (in our case, these are Docker containers) and Nomad will allocate the job to a client that has enough resources to run that script. 
 
-At NeuralDB Enterprise startup, we submit 4 jobs to Nomad:
+At NeuralDB Enterprise startup, we submit 3 jobs to Nomad:
 1. Traefik Server
 2. Model Bazaar
 3. Nomad Autoscaler
