@@ -2,7 +2,7 @@ data_dir  = "/opt/nomad/data"
 bind_addr = "0.0.0.0"
 
 server {
-  enabled = true
+  enabled = $SERVER_ENABLED
   bootstrap_expect = 1
   default_scheduler_config {
     preemption_config {
@@ -15,10 +15,20 @@ server {
 }
 
 client {
-  enabled = false
+  $NODE_CLASS_STRING
+  node_pool = "$NODE_POOL"
+  enabled = $CLIENT_ENABLED
+  server_join {
+    retry_join = ["$NOMAD_SERVER_PRIVATE_IP"]
+    retry_max = 3
+    retry_interval = "15s"
+  }
 }
 
-ui {
-  enabled = false
+plugin "docker" {
+  config {
+    volumes {
+      enabled = true
+    }
+  }
 }
-

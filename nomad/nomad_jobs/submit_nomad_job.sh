@@ -67,26 +67,24 @@ submit_nomad_job() {
     local temp_hcl_file headers json_payload_url submit_url json_payload response
 
     headers="Content-Type: application/json"
-    json_payload_url="${nomad_endpoint}v1/jobs/parse"
-    submit_url="${nomad_endpoint}v1/jobs"
+    hcl_to_json_url="${nomad_endpoint}v1/jobs/parse"
+    submit_job_url="${nomad_endpoint}v1/jobs"
 
     # Replace placeholders
     temp_hcl_file=$(replace_placeholders "$filepath")
 
-    # Replace placeholders
-    temp_hcl_file=$(replace_placeholders "$filepath")
     hcl_content=$(<"$temp_hcl_file")
     echo $hcl_content
 
-    # Construct JSON payload
-    json_payload=$(jq -n --arg hcl "$hcl_content" '{JobHCL: $hcl, Canonicalize: true}')
+    # Construct HCL payload
+    hcl_payload=$(jq -n --arg hcl "$hcl_content" '{JobHCL: $hcl, Canonicalize: true}')
 
     # Convert HCL to JSON using the Nomad API
-    json_payload=$(curl -s -X POST -H "$headers" -d "$json_payload" "$json_payload_url")
+    json_payload=$(curl -s -X POST -H "$headers" -d "$hcl_payload" "$hcl_to_json_url")
     echo "$json_payload"
 
     # Submit JSON to Nomad
-    response=$(curl -s -X POST -H "$headers" -d "{\"Job\":$json_payload}" "$submit_url")
+    response=$(curl -s -X POST -H "$headers" -d "{\"Job\":$json_payload}" "$submit_job_url")
     echo "$response"
 
     # Cleanup temporary file

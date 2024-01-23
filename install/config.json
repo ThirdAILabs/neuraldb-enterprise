@@ -1,16 +1,28 @@
 {
-  "HEADNODE_IP": [
-    "11.11.11.11"
+  "nodes": [
+    {
+      "private_ip": "10.0.0.4",
+      "web_ingress": {
+        "public_ip": "12.34.56.78",
+        "run_jobs": true,
+        "ssh_username": "admin"
+      },
+      "sql_server": {
+        "database_dir": "/opt/neuraldb_enterprise/database",
+        "database_password": "password"
+      },
+      "shared_file_system": {
+        "create_nfs_server": true,
+        "shared_dir": "/opt/neuraldb_enterprise/model_bazaar"
+      },
+      "nomad_server": true
+    },
+    {
+      "private_ip": "10.0.0.5"
+    },
+    {
+      "private_ip": "10.0.0.6"
+    }
   ],
-  "PRIVATE_HEADNODE_IP": [
-    "10.10.10.10"
-  ],
-  "CLIENTNODE_IP": [
-    "33.33.33.33",
-    "44.44.44.44"
-  ],
-  "PRIVATE_CLIENTNODE_IP": [
-    "30.30.30.30",
-    "40.40.40.40"
-  ]
+  "ssh_username": "admin"
 }
