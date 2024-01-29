@@ -378,6 +378,7 @@ Initiates training for a model and returns a Model instance.
     * embedding_dim    : hidden_dimension for individual model.
     * output_dim       : output_dimension for individual model.
     * max_in_memory_batches    : number of batches to train in one iteration.
+    * priority         : priority (between 1-100) of train_jobs. Higher value means greater priority. (default: 50)
 
     * In case of using .csv documents, user must provide required values for `csv_*` fields : `csv_id_column`, `csv_strong_columns`, `csv_weak_columns` and `csv_reference_columns`.
   
