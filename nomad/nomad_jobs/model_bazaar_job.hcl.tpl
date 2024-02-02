@@ -58,12 +58,12 @@ EOF
       }
 
       config {
-        image = "neuraldbenterprise.azurecr.io/model_bazaar:latest"
+        image = "neuraldbenterprise.azurecr.io/model_bazaar_monia:latest"
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {
-          username = "neuraldb-enterprise-pull"
-          password = "yVGj3GVOJBJM4Lm+HOkvSfIZV435fHeHYVPgjyw2jt+ACRDwaC/l"
+          username = "neuraldb-enterprise-pull-monia"
+          password = "6tCmOoKU6BOUBoG9Ft5Kuv0z40O7WYGUbw/N9cxULb+ACRDGZmwu"
           server_address = "neuraldbenterprise.azurecr.io"
         }
         volumes = [
