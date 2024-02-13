@@ -53,3 +53,34 @@ Wait for the setup process to complete (approximately 10 minutes), and you have 
 Paste the `public_ip` of your `web_ingress` node into your browser, and you should see a login screen, where you can create an account, verify your email, and start training NeuralDB's! An admin account will already be created for you using `admin_mail` and `admin_password` as the login credentials.
 
 Ensure that network security precautions are taken before uploading sensitive files to this instance of NeuralDB Enterprise, if your public IP is exposed to the internet.
+
+
+#### Extra Precautions
+
+By default, the following ports are exposed on the node with a public IP:
+- Port 4646 (Nomad GUI)
+  - This port allows you to see the Nomad GUI in your browser. You can see the nodes in your cluster as well as all docker containers launched on the cluster. This is a good way to debug issues with train/deploy jobs.
+- Port 8080 (Traefik GUI)
+  - This port allows you to see the Traefik GUI in your browser. You will see all the routes from network call at the public IP to the respective service in the Nomad cluster.
+
+These ports may allow external users to access sensitive information without login credentials. To restrict access of these ports, you can set up firewall rules on your nodes so that only localhost will have access to those ports. SSH into each node where you wish to restrict the ports, and run the following commands to use `ufw` (uncomplicated firewall) to block external network calls to interact with ports 4646 and 8080.
+
+```
+sudo apt install ufw
+sudo ufw allow ssh
+sudo ufw enable
+sudo ufw allow from 127.0.0.1 to any port 4646
+sudo ufw allow from 127.0.0.1 to any port 8080
+```
+
+If you want to visit the Nomad GUI or Traefik GUI, you will have to port forward the corresponding port to your local machine. To do this, run the following command, replacing the placeholder values with your values.
+```
+ssh -L {port}:localhost:{port} {ssh_username}@{node_ip}
+```
+
+For example, if my node's IP was 12.34.56.78, and I wanted to see the Nomad GUI, I would run the following:
+```
+ssh -L 4646:localhost:4646 user@12.34.56.78
+```
+
+Now I can paste localhost:4646 into my browser and view the Nomad GUI.
