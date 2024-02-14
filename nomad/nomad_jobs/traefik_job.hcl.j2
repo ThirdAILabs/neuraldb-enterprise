@@ -35,7 +35,6 @@ job "traefik" {
         ports = ["admin", "http"]
         args = [
           "--api.dashboard=true",
-          "--api.insecure=true", ### For Test only, please do not use that in production
           "--entrypoints.web.address=:${NOMAD_PORT_http}",
           "--entrypoints.traefik.address=:${NOMAD_PORT_admin}",
           "--providers.nomad=true",
