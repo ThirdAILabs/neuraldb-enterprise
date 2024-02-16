@@ -9,7 +9,7 @@ shared_dir=$(jq -r '.nodes[] | select(has("shared_file_system")) | .shared_file_
 
 scp $license_path "$web_ingress_ssh_username"@$web_ingress_public_ip:$shared_dir/license
 
-if [ -n $airgapped_license_file ]; then
+if [ -n "$airgapped_license_file" ]; then
   scp $airgapped_license_file "$web_ingress_ssh_username@$web_ingress_public_ip:$shared_dir/license"
 fi
 
