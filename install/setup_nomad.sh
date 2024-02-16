@@ -89,7 +89,7 @@ fi
 
 $nomad_server_ssh_command <<EOF
     tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
-    tmux new-session -d -s nomad-agent 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_nomad_agent.sh true true $node_pool $node_class $nomad_server_private_ip > head.log 2> head.err'
+    tmux new-session -d -s nomad-agent 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_nomad_agent.sh true true $node_pool $node_class $nomad_server_private_ip $nomad_server_private_ip > head.log 2> head.err'
 EOF
 
 
@@ -111,6 +111,6 @@ for nomad_client_private_ip in "${nomad_client_private_ips[@]}"; do
 
     $nomad_client_ssh_command <<EOF
         tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
-        tmux new-session -d -s nomad-agent 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_nomad_agent.sh false true $node_pool $node_class $nomad_server_private_ip > head.log 2> head.err'
+        tmux new-session -d -s nomad-agent 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_nomad_agent.sh false true $node_pool $node_class $nomad_server_private_ip $nomad_client_private_ip > head.log 2> head.err'
 EOF
 done
