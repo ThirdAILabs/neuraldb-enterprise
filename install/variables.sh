@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Should change these variables
-license_path="/path/to/ndb_enterprise_license.json"  # license file must be named ndb_enterprise_license.json
-bolt_file_license_path="" # if using a file based license, provide the path name here
+ndb_enterprise_license_path="/path/to/ndb_enterprise_license.json"  # license file must be named ndb_enterprise_license.json
 jwt_secret="1234"  # this should be a password-like string 
 admin_mail="admin@mail.com"
 admin_username="admin"
