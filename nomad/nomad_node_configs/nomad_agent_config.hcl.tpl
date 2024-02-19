@@ -1,6 +1,12 @@
 data_dir  = "/opt/nomad/data"
 bind_addr = "0.0.0.0"
 
+advertise {
+  http = "$NODE_PRIVATE_IP"
+  rpc  = "$NODE_PRIVATE_IP"
+  serf = "$NODE_PRIVATE_IP"
+}
+
 server {
   enabled = $SERVER_ENABLED
   bootstrap_expect = 1
