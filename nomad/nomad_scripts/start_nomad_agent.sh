@@ -29,7 +29,7 @@ export PRIVATE_HOST_NETWORK=$private_host_network
 if [ "$7" != "" ]; then
     read -r -d '' public_host_network << EOF
   host_network "public" {
-    cidr = "$7/32"
+    cidr = "172.17.0.1/32"
   }
 EOF
     export PUBLIC_HOST_NETWORK=$public_host_network
