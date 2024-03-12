@@ -22,6 +22,8 @@ server {
 
 client {
   $NODE_CLASS_STRING
+  $PUBLIC_HOST_NETWORK
+  $PRIVATE_HOST_NETWORK
   node_pool = "$NODE_POOL"
   enabled = $CLIENT_ENABLED
   server_join {

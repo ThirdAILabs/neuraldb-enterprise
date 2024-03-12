@@ -14,11 +14,17 @@ job "traefik" {
     count = 1
 
     network {
-      port  "http" {
+      port  "http-private" {
           static = 80
+          host = "private"
+      }
+      port  "http-public" {
+          static = 80
+          host = "public"
       }
       port  "admin" {
           static = 8080
+          host = "private"
       }
     }
 
@@ -35,8 +41,8 @@ job "traefik" {
         ports = ["admin", "http"]
         args = [
           "--api.dashboard=true",
-          "--entrypoints.web.address=:${NOMAD_PORT_http}",
-          "--entrypoints.traefik.address=:${NOMAD_PORT_admin}",
+          "--entrypoints.web.address={{ PRIVATE_SERVER_IP }}:${NOMAD_PORT_http-private};{{ PUBLIC_SERVER_IP }}:${NOMAD_PORT_http-public}",
+          "--entrypoints.traefik.address={{ PRIVATE_SERVER_IP }}:${NOMAD_PORT_admin}",
           "--providers.nomad=true",
           "--providers.nomad.endpoint.address=http://{{ PRIVATE_SERVER_IP }}:4646" ### IP to your nomad server 
         ]
