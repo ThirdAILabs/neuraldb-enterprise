@@ -1,5 +1,5 @@
 # Check for command-line argument
-if [ "$#" -ne 6 ]; then
+if [ "$#" -ne 7 ]; then
     echo "Usage: $0 <server_enabled> <client_enabled> <node_pool> <node_class> <nomad_server_private_ip> <node_private_ip> <node_public_ip>"
     exit 1
 fi
