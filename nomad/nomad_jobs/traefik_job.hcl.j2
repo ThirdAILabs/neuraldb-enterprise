@@ -14,35 +14,31 @@ job "traefik" {
     count = 1
 
     network {
-      port  "http-private" {
+      port  "http_private" {
           static = 80
-          host = "private"
+          host_network = "public"
       }
-      port  "http-public" {
-          static = 80
-          host = "public"
-      }
+      
       port  "admin" {
           static = 8080
-          host = "private"
+          host_network = "private"
       }
     }
 
     service {
-      name = "traefik-http"
+      name = "traefik"
       provider = "nomad"
-      port = "http"
     }
 
     task "server" {
       driver = "docker"
       config {
         image = "traefik:v2.10"
-        ports = ["admin", "http"]
+        ports = ["admin"]
         args = [
           "--api.dashboard=true",
-          "--entrypoints.web.address={{ PRIVATE_SERVER_IP }}:${NOMAD_PORT_http-private};{{ PUBLIC_SERVER_IP }}:${NOMAD_PORT_http-public}",
-          "--entrypoints.traefik.address={{ PRIVATE_SERVER_IP }}:${NOMAD_PORT_admin}",
+          "--entrypoints.web.address=:80",
+          "--entrypoints.traefik.address=:${NOMAD_PORT_admin}",
           "--providers.nomad=true",
           "--providers.nomad.endpoint.address=http://{{ PRIVATE_SERVER_IP }}:4646" ### IP to your nomad server 
         ]
