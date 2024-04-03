@@ -67,6 +67,7 @@ sudo apt install ufw
 sudo ufw allow ssh
 sudo ufw enable
 sudo ufw default allow incoming
+sudo ufw allow in from 172.17.0.0/16 to any port 4646
 sudo ufw deny 4646
 ```
 
