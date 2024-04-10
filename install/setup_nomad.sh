@@ -97,8 +97,10 @@ nomad_data_dir=/opt/neuraldb_enterprise/nomad_data
 $nomad_server_ssh_command <<EOF
     sudo mkdir -p $nomad_data_dir
     if [ ! -f "$nomad_data_dir/management_token.txt" ]; then
-        sudo bash -c "nomad acl bootstrap > $nomad_data_dir/management_token.txt"
+        sudo bash -c "nomad acl bootstrap > $nomad_data_dir/management_token.txt 2>&1"
     fi
+    secret_id=$(grep 'Secret ID' $nomad_data_dir/management_token.txt  | awk '{print $NF}')
+    nomad acl policy apply -description "Task Runner policy" task_runner ./nomad/nomad_node_configs/task_runner.policy.hcl -token \$secret_id
 EOF
 
 
