@@ -38,9 +38,3 @@ plugin "docker" {
     }
   }
 }
-
-plugin "exec" {
-  config {
-    enabled = false
-  }
-}
