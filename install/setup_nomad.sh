@@ -61,20 +61,13 @@ for node_private_ip in "${node_private_ips[@]}"; do
         sudo apt-get update && sudo apt-get install -y nomad="1.6.2-1"
 
         # Cloning neuraldb-enterprise repo
-        if [ -d "$repo_dir" ]; then
-            # If the directory exists, cd into it and pull the latest updates
-            echo "Directory $repo_dir already exists. Pulling latest updates..."
-            cd "$repo_dir" && git pull
-        else
-            # If the directory does not exist, clone the repository
-            echo "Cloning repository..."
-            git clone "$repo_url" && cd "$repo_dir"
-        fi
+        rm -rf "$repo_dir" && git clone -b acl "$repo_url" && cd "$repo_dir"
+
 EOF
 done
 
 
-echo "Starting Initial Nomad Server"
+echo "Setting up Nomad Cluster..."
 
 nomad_server_private_ip=$(jq -r '.nodes[] | select(has("nomad_server")) | .private_ip' config.json)
 node_pool=$(jq -r --arg ip "$nomad_server_private_ip" '.nodes[] | select(.private_ip == $ip) | .web_ingress.run_jobs as $run_jobs | if $run_jobs == null or $run_jobs == true then "default" else "web_ingress" end' config.json)
@@ -87,9 +80,25 @@ else
     node_class="default"
 fi
 
+
+
+echo "Starting Initial Nomad Server"
+
 $nomad_server_ssh_command <<EOF
     tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
     tmux new-session -d -s nomad-agent 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_nomad_agent.sh true true $node_pool $node_class $nomad_server_private_ip $nomad_server_private_ip > head.log 2> head.err'
+EOF
+
+
+echo "Bootstrapping ACL system"
+
+nomad_data_dir=/opt/neuraldb_enterprise/nomad_data
+
+$nomad_server_ssh_command <<EOF
+    sudo mkdir -p $nomad_data_dir
+    if [ ! -f "$nomad_data_dir/management_token.txt" ]; then
+        sudo bash -c "nomad acl bootstrap > $nomad_data_dir/management_token.txt"
+    fi
 EOF
 
 

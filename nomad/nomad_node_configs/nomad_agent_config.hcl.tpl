@@ -31,6 +31,10 @@ client {
   }
 }
 
+acl {
+  enabled = true
+}
+
 plugin "docker" {
   config {
     volumes {
