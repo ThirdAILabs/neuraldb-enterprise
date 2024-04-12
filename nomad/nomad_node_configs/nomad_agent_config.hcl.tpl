@@ -36,7 +36,7 @@ acl {
 }
 
 limits {
-  http_max_conns_per_client = 1000
+  http_max_conns_per_client = 0
 }
 
 plugin "docker" {
