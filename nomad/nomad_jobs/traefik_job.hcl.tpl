@@ -50,7 +50,7 @@ EOF
           "--entrypoints.web.address=:${NOMAD_PORT_http}",
           "--entrypoints.traefik.address=:${NOMAD_PORT_admin}",
           "--providers.nomad=true",
-          "--providers.nomad.endpoint.address=http://{{ PRIVATE_SERVER_IP }}:4646" ### IP to your nomad server 
+          "--providers.nomad.endpoint.address=http://{{ PRIVATE_SERVER_IP }}:4646", ### IP to your nomad server 
           "--providers.nomad.endpoint.token=${TASK_RUNNER_TOKEN}"
         ]
       }

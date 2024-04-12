@@ -87,6 +87,7 @@ $nomad_server_ssh_command <<EOF
     tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
     tmux new-session -d -s nomad-agent 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_nomad_agent.sh true true $node_pool $node_class $nomad_server_private_ip $nomad_server_private_ip > head.log 2> head.err'
 EOF
+sleep 20  # Wait until server is running to continue setup
 
 
 echo "Bootstrapping ACL system"

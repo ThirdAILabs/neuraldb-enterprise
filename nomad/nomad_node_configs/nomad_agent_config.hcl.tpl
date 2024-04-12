@@ -35,6 +35,10 @@ acl {
   enabled = true
 }
 
+limits {
+  http_max_conns_per_client = 1000
+}
+
 plugin "docker" {
   config {
     volumes {
