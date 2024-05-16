@@ -17,6 +17,7 @@ server {
       service_scheduler_enabled  = false
       sysbatch_scheduler_enabled = false
     }
+    memory_oversubscription_enabled = true
   }
 }
 
