@@ -17,6 +17,7 @@ server {
       service_scheduler_enabled  = false
       sysbatch_scheduler_enabled = false
     }
+    memory_oversubscription_enabled = true
   }
 }
 
@@ -29,6 +30,15 @@ client {
     retry_max = 3
     retry_interval = "15s"
   }
+}
+
+acl {
+  enabled = true
+}
+
+limits {
+  http_max_conns_per_client = 0
+  rpc_max_conns_per_client = 0
 }
 
 plugin "docker" {

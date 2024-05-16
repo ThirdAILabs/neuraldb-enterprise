@@ -4,7 +4,8 @@
 
 nomad_ip="$1"
 hcl_filename="$2"
-shift 2 # Shift the first two arguments
+acl_token="$3"
+shift 3 # Shift the first two arguments
 additional_args=("$@")
 
 # Function to determine OS type
@@ -64,9 +65,11 @@ replace_placeholders() {
 submit_nomad_job() {
     local filepath=$1
     local nomad_endpoint=$2
+    local acl_token=$3
     local temp_hcl_file headers json_payload_url submit_url json_payload response
 
-    headers="Content-Type: application/json"
+    content_header="Content-Type: application/json"
+    token_header="X-Nomad-Token: $acl_token"
     hcl_to_json_url="${nomad_endpoint}v1/jobs/parse"
     submit_job_url="${nomad_endpoint}v1/jobs"
 
@@ -80,11 +83,11 @@ submit_nomad_job() {
     hcl_payload=$(jq -n --arg hcl "$hcl_content" '{JobHCL: $hcl, Canonicalize: true}')
 
     # Convert HCL to JSON using the Nomad API
-    json_payload=$(curl -s -X POST -H "$headers" -d "$hcl_payload" "$hcl_to_json_url")
+    json_payload=$(curl -s -X POST -H "$content_header" -H "$token_header" -d "$hcl_payload" "$hcl_to_json_url")
     echo "$json_payload"
 
     # Submit JSON to Nomad
-    response=$(curl -s -X POST -H "$headers" -d "{\"Job\":$json_payload}" "$submit_job_url")
+    response=$(curl -s -X POST -H "$content_header" -H "$token_header" -d "{\"Job\":$json_payload}" "$submit_job_url")
     echo "$response"
 
     # Cleanup temporary file
@@ -92,4 +95,4 @@ submit_nomad_job() {
 }
 
 # Main execution
-submit_nomad_job "$hcl_filename" "http://${nomad_ip}:4646/"
+submit_nomad_job "$hcl_filename" "http://${nomad_ip}:4646/" "$acl_token"
