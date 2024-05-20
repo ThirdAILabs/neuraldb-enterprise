@@ -30,12 +30,9 @@ sed_in_place() {
     if [ "$os_type" = "macOS" ]; then
         # macOS requires an empty string as an argument to -i
         sed_cmd="sed -i ''"
-    elif [ "$os_type" = "Linux" ]; then
+    else
         # Linux does not require an empty string
         sed_cmd="sed -i"
-    else
-        echo "Unsupported OS"
-        exit 1
     fi
 
     # Run the sed command
