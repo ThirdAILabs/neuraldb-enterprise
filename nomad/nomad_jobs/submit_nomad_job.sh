@@ -31,7 +31,6 @@ sed_in_place() {
         # macOS requires an empty string as an argument to -i
         sed_cmd="sed -i ''"
     else
-        # Linux does not require an empty string
         sed_cmd="sed -i"
     fi
 
