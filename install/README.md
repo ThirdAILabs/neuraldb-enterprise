@@ -60,7 +60,7 @@ Ensure that network security precautions are taken before uploading sensitive fi
 
 By default, port 4646 is exposed on nodes all nodes running a Nomad client. This means that if a node has a public IP, that port can be accessed externally. Port 4646 allows you to see the Nomad GUI in your browser. You can see the nodes in your cluster as well as all docker containers launched on the cluster. This is a good way to debug issues with train/deploy jobs.
 
-This port may allow external users to access sensitive information without login credentials. To restrict access of this port, you can set up firewall rules on your nodes so that only localhost will have access to those ports. SSH into each node where you wish to restrict the port, and run the following commands to use `ufw` (uncomplicated firewall) to block external network calls to interact with port 4646.
+To restrict access to the Nomad GUI port, you can set up firewall rules on your nodes so that only localhost will have access to those ports. SSH into each node where you wish to restrict the port, and run the following commands to use `ufw` (uncomplicated firewall) to block external network calls to interact with port 4646.
 
 ```
 sudo apt install ufw
@@ -82,3 +82,5 @@ ssh -L 4646:localhost:4646 user@12.34.56.78
 ```
 
 Now I can paste localhost:4646 into my browser and view the Nomad GUI.
+
+As an extra security feature, we enable the Nomad ACL system, so that the Nomad GUI is only able to be accessed to individuals with a management token. This token can be found on your headnode at the path `/opt/neuraldb_enterprise/nomad_data/management_token.txt` as the field `Secret ID`. You can paste this key into the GUI to gain access to the Nomad dashboard.
