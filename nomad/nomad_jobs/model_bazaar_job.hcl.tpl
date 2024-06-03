@@ -58,13 +58,13 @@ EOF
       }
 
       config {
-        image = "thirdaistaging.azurecr.io/model_bazaar:latest"
+        image = "neuraldbenterprise.azurecr.io/model_bazaar:latest"
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {
           username = "neuraldb-enterprise-pull"
           password = "gBDFl4+eOCPTKbK2IRPZc4AX38AcMcqb/M38DVWjkv+ACRC2srjF"
-          server_address = "thirdaistaging.azurecr.io"
+          server_address = "neuraldbenterprise.azurecr.io"
         }
         volumes = [
           "{{ SHARE_DIR }}:/model_bazaar"
