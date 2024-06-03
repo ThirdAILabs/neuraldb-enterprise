@@ -63,7 +63,7 @@ EOF
         group_add = ["4646"]
         auth {
           username = "neuraldb-enterprise-pull"
-          password = "gBDFl4+eOCPTKbK2IRPZc4AX38AcMcqb/M38DVWjkv+ACRC2srjF"
+          password = "yVGj3GVOJBJM4Lm+HOkvSfIZV435fHeHYVPgjyw2jt+ACRDwaC/l"
           server_address = "neuraldbenterprise.azurecr.io"
         }
         volumes = [
