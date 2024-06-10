@@ -36,7 +36,7 @@ EOF
 create_nfs_server=$(jq -r '.nodes[] | select(has("shared_file_system")) | .shared_file_system.create_nfs_server' config.json)
 
 # Install NFS Server on the NFS Server node
-if [ $create_nfs_server ]; then
+if [ $create_nfs_server == "true"  ]; then
     nfs_client_private_ips=($(jq -r --arg ip "$shared_file_system_private_ip" '.nodes[] | select(.private_ip != $ip) | .private_ip' config.json))
     $shared_file_system_ssh_command <<EOF
         sudo apt install -y nfs-kernel-server
