@@ -1,0 +1,34 @@
+# Cluster Configuration for NeuralDB Enterprise
+cluster_type_config: local
+
+# Role Assignments and Configurations
+head_node:
+  private_ip: "10.0.0.4"
+  public_ip: "12.34.56.78"
+  ssh_username: "admin"
+  roles:
+    web_ingress:
+    sql_server:
+      database_dir: "/opt/neuraldb_enterprise/database"
+      database_password: "password"
+    shared_file_system:
+      create_nfs_server: true
+      shared_dir: "/opt/neuraldb_enterprise/model_bazaar"
+    nomad_server:
+
+worker_nodes: ["10.0.0.5", "10.0.0.6"]  # List of worker nodes by IP
+
+security:
+  license_path: /path/to/ndb_enterprise_license.json
+  jwt_secret: "1234"  # Change this to a secure, random string
+  admin:
+    email: admin@mail.com
+    username: admin
+    password: password
+
+api:
+  genai_key: open-ai-api-key
+
+autoscaling:
+  enabled: false
+  max_count: 1

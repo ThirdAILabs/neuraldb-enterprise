@@ -1,0 +1,34 @@
+# Cluster configuration for NeuralDB Enterprise on AWS
+cluster_type_config: aws
+
+project:
+  name: neuraldb-enterprise
+
+ssh:
+  key_name: neuraldb-enterprise-key
+  public_key_path: ~/.ssh/id_rsa.pub  # Ensure this path is correct for your setup
+
+network:
+  region: us-east-1
+  vpc_cidr_block: 192.168.0.0/16
+  subnet_cidr_block: 192.168.0.0/24
+
+vm_setup:
+  type: t2.xlarge
+  ssh_username: admin
+  vm_count: 1
+
+security:
+  license_path: /path/to/ndb_enterprise_license.json
+  jwt_secret: "1234"  # Change this to a secure, random string
+  admin:
+    email: admin@mail.com
+    username: admin
+    password: password
+
+api:
+  genai_key: open-ai-api-key
+
+autoscaling:
+  enabled: false
+  max_count: 1

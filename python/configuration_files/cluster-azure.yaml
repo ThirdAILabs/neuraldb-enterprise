@@ -1,0 +1,33 @@
+# Cluster configuration for NeuralDB Enterprise on Azure
+cluster_type_config: azure
+
+project:
+  name: neuraldb-enterprise
+
+azure_resources:
+  resource_group_name: neuraldb-enterprise-group
+  vnet_name: neuraldb-enterprise-vnet
+  subnet_name: neuraldb-enterprise-subnet
+  head_node_ipname: neuraldb-enterprise-ip
+
+location: centralus
+
+vm_setup:
+  type: Standard_B4ms
+  ssh_username: admin
+  vm_count: 2
+
+security:
+  license_path: /path/to/ndb_enterprise_license.json
+  jwt_secret: "1234"  # Change this to a secure, random string
+  admin:
+    email: admin@mail.com
+    username: admin
+    password: password
+
+api:
+  genai_key: open-ai-api-key
+
+autoscaling:
+  enabled: false
+  max_count: 1
