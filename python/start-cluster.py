@@ -57,7 +57,8 @@ def main():
         except Exception as e:
             logger.error("Error occurred, initiating cleanup.")
             aws_infra.cleanup_resources(
-                vpc_id,
+                instance_ids=instance_ids,
+                vpc_id=vpc_id,
                 sg_id=sg_id,
                 igw_id=igw_id,
                 subnet_ids=[subnet_id],
