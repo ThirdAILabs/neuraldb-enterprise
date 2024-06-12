@@ -1,28 +1,25 @@
-import paramiko
+from ssh_client_handler import SSHClientHandler
 import os
 
 
-class NeuralDBClusterSetup:
-    def __init__(self, config):
+class UploadLicense:
+    def __init__(self, config, logger):
         self.config = config
-        self.ssh_client = paramiko.SSHClient()
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.setup_ssh_connection()
+        self.logger = logger
 
-    def setup_ssh_connection(self):
-        """Establish SSH connection using the provided configuration."""
         web_ingress_node = next(
             node for node in self.config["nodes"] if "web_ingress" in node
         )
         self.web_ingress_public_ip = web_ingress_node["web_ingress"]["public_ip"]
         self.web_ingress_ssh_username = web_ingress_node["web_ingress"]["ssh_username"]
-        key_path = os.path.expanduser(
-            self.config["ssh"]["public_key_path"].replace(".pub", "")
-        )  # Private key assumed
-        self.ssh_client.connect(
+
+        self.node_ssh_username = self.config["ssh_username"]
+
+        self.ssh_client_handler = SSHClientHandler(
+            self.node_ssh_username,
+            self.web_ingress_ssh_username,
             self.web_ingress_public_ip,
-            username=self.web_ingress_ssh_username,
-            key_filename=key_path,
+            logger=logger,
         )
 
     def transfer_files(self):
@@ -36,18 +33,21 @@ class NeuralDBClusterSetup:
         )
 
         # Transfer primary license file
-        self.transfer_file(license_path, f"{shared_dir}/license")
+        self.ssh_client_handler.copy_file(
+            license_path,
+            f"{shared_dir}/license",
+            self.web_ingress_public_ip,
+            self.web_ingress_ssh_username,
+        )
 
         # Transfer airgapped license if it exists
         if airgapped_license_path:
-            self.transfer_file(airgapped_license_path, f"{shared_dir}/license")
-
-    def transfer_file(self, local_path, remote_path):
-        """Helper function to transfer a single file."""
-        with paramiko.SFTPClient.from_transport(
-            self.ssh_client.get_transport()
-        ) as sftp:
-            sftp.put(local_path, f"{remote_path}/{os.path.basename(local_path)}")
+            self.ssh_client_handler.copy_file(
+                airgapped_license_path,
+                f"{shared_dir}/license",
+                self.web_ingress_public_ip,
+                self.web_ingress_ssh_username,
+            )
 
     def set_permissions(self):
         """Set permissions on the remote directory."""
@@ -55,10 +55,4 @@ class NeuralDBClusterSetup:
             node for node in self.config["nodes"] if "shared_file_system" in node
         )["shared_file_system"]["shared_dir"]
         command = f"sudo chmod g+rw {shared_dir}/license/ndb_enterprise_license.json"
-        stdin, stdout, stderr = self.ssh_client.exec_command(command)
-        print(stdout.read().decode())
-        print(stderr.read().decode())
-
-    def close(self):
-        """Close the SSH connection."""
-        self.ssh_client.close()
+        self.ssh_client_handler.execute_command([command], self.web_ingress_public_ip)

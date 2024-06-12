@@ -4,7 +4,7 @@ from logger import LoggerConfig
 from enterprise_cluster.aws_class import AWSInfrastructure
 from setup_cluster.create_nfs import NFSSetupManager
 from setup_cluster.check_nfs import NodeStatusChecker
-from setup_cluster.upload_license import NeuralDBClusterSetup
+from setup_cluster.upload_license import UploadLicense
 from setup_cluster.setup_nomad import NomadDeployer
 from setup_cluster.setup_postgresql import SQLServerDeployer
 from setup_cluster.launch_nomad_jobs import NomadJobDeployer
@@ -65,46 +65,48 @@ def main():
                 key_pair_name=config["ssh"]["key_name"],
             )
 
-    nfs_manager = NFSSetupManager(config, "~/.ssh/id_rsa.pub")
+    nfs_manager = NFSSetupManager(config, logger)
     try:
         nfs_manager.setup_shared_file_system()
         nfs_manager.setup_nfs_server()
-    finally:
-        nfs_manager.close()
+        nfs_manager.mount_nfs_clients()
+    except Exception as e:
+        logger.error(f"Error occurred,  {e}")
 
-    checker = NodeStatusChecker(config)
+    checker = NodeStatusChecker(config, logger)
     try:
         checker.check_status_on_nodes()
         checker.copy_status_file()
     finally:
         checker.clean_up()
 
-    cluster_setup = NeuralDBClusterSetup(config)
+    cluster_setup = UploadLicense(config, logger)
     try:
         cluster_setup.transfer_files()
         cluster_setup.set_permissions()
-    finally:
-        cluster_setup.close()
+    except Exception as e:
+        logger.error(f"Error occurred,  {e}")
 
-    deployer = NomadDeployer(config)
+    deployer = NomadDeployer(config, logger)
     try:
         deployer.deploy()
-        deployer.bootstrap_acl()
+        deployer.setup_nomad_cluster()
+        deployer.bootstrap_acl_system()
         deployer.start_nomad_clients()
-    finally:
-        deployer.close()
+    except Exception as e:
+        logger.error(f"Error occurred,  {e}")
 
-    psql_deployer = SQLServerDeployer(config)
+    psql_deployer = SQLServerDeployer(config, logger)
     try:
         psql_deployer.deploy_sql_server()
-    finally:
-        psql_deployer.close_ssh_connection()
+    except Exception as e:
+        logger.error(f"Error occurred,  {e}")
 
-    nomad_job_deployer = NomadJobDeployer(config)
+    nomad_job_deployer = NomadJobDeployer(config, logger)
     try:
         nomad_job_deployer.deploy_jobs()
-    finally:
-        nomad_job_deployer.close_ssh_connection()
+    except Exception as e:
+        logger.error(f"Error occurred,  {e}")
 
 
 if __name__ == "__main__":

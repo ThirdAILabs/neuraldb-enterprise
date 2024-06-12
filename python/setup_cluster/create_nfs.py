@@ -1,10 +1,8 @@
-import json
-import paramiko
+from ssh_client_handler import SSHClientHandler
 
 
 class NFSSetupManager:
-    def __init__(self, config, key_path, logger):
-        self.key_path = key_path
+    def __init__(self, config, logger):
         self.config = config
         self.logger = logger
 
@@ -27,39 +25,14 @@ class NFSSetupManager:
             for node in self.config["nodes"]
             if node["private_ip"] != self.shared_ip
         ]
-
-    def create_ssh_client(self, ip, username, proxy=None):
-        try:
-            sock = paramiko.ProxyCommand(proxy) if proxy else None
-
-            client = paramiko.SSHClient()
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-            client.connect(ip, username=username, key_filename=self.key_path, sock=sock)
-            return client
-        except Exception as e:
-            print(f"Failed to create SSH client: {e}")
-            return None
-
-    def execute_commands(self, ssh_client, commands):
-        for command in commands:
-            stdin, stdout, stderr = ssh_client.exec_command(command)
-            self.logger.info(f"command: {stdin.read().decode()}")
-            self.logger.info(f"stdout: {stdout.read().decode()}")
-            self.logger.info(f"stderr: {stderr.read().decode()}")
+        self.ssh_client_handler = SSHClientHandler(
+            self.node_ssh_username,
+            self.web_ingress_ssh_username,
+            self.web_ingress_public_ip,
+            logger=logger,
+        )
 
     def setup_shared_file_system(self):
-
-        if self.web_ingress_private_ip == self.shared_file_system_private_ip:
-            ssh_client = self.create_ssh_client(
-                self.web_ingress_private_ip, self.web_ingress_ssh_username
-            )
-        else:
-            proxy = f"ssh -o StrictHostKeyChecking=no -J {self.web_ingress_ssh_username}@{self.web_ingress_public_ip} {self.node_ssh_username}@{self.shared_file_system_private_ip}"
-            ssh_client = self.create_ssh_client(
-                self.shared_file_system_private_ip, self.node_ssh_username, proxy=proxy
-            )
-
         commands = [
             "sudo apt -y update",
             "sudo groupadd -g 4646 nomad_nfs || true",
@@ -74,7 +47,17 @@ class NFSSetupManager:
             f"sudo chmod -R 774 {self.shared_dir}",
             f"sudo chmod -R g+s {self.shared_dir}",
         ]
-        self.execute_commands(ssh_client, commands)
+
+        use_proxy = self.web_ingress_private_ip != self.shared_file_system_private_ip
+        self.ssh_client_handler.execute_commands(
+            commands,
+            (
+                self.shared_file_system_private_ip
+                if use_proxy
+                else self.web_ingress_public_ip
+            ),
+            use_proxy,
+        )
 
     def setup_nfs_server(self):
         if (
@@ -87,55 +70,59 @@ class NFSSetupManager:
                 "sudo apt install -y acl",
                 f"sudo setfacl -d -R -m u::rwx,g::rwx,o::r {self.shared_dir}",
             ]
-            if self.web_ingress_private_ip == self.shared_file_system_private_ip:
-                ssh_client = self.create_ssh_client(
-                    self.web_ingress_private_ip, self.web_ingress_ssh_username
-                )
-            else:
-                proxy = f"ssh -o StrictHostKeyChecking=no -J {self.web_ingress_ssh_username}@{self.web_ingress_public_ip} {self.node_ssh_username}@{self.shared_file_system_private_ip}"
-                ssh_client = self.create_ssh_client(
-                    self.shared_file_system_private_ip,
-                    self.node_ssh_username,
-                    proxy=proxy,
-                )
-            self.execute_commands(ssh_client, commands)
+            use_proxy = (
+                self.web_ingress_private_ip != self.shared_file_system_private_ip
+            )
+            self.ssh_client_handler.execute_commands(
+                commands,
+                (
+                    self.shared_file_system_private_ip
+                    if use_proxy
+                    else self.web_ingress_public_ip
+                ),
+                use_proxy,
+            )
 
             for ip in self.nfs_client_private_ips:
                 export_line = f"{self.shared_dir} {ip}(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"
                 check_export = f'grep -qF -- "{export_line}" /etc/exports || echo "{export_line}" | sudo tee -a /etc/exports'
-                self.execute_commands(ssh_client, [check_export])
+                self.ssh_client_handler.execute_commands(
+                    [check_export],
+                    (
+                        self.shared_file_system_private_ip
+                        if use_proxy
+                        else self.web_ingress_public_ip
+                    ),
+                    use_proxy,
+                )
 
             final_commands = [
                 "sudo exportfs -ra",
                 "if sudo systemctl is-active --quiet nfs-kernel-server; then sudo systemctl restart nfs-kernel-server; else sudo systemctl start nfs-kernel-server; fi",
                 "sudo systemctl enable nfs-kernel-server",
             ]
-            self.execute_commands(ssh_client, final_commands)
-
-    def mount_nfs_clients(self):
-        for client_ip in self.nfs_client_private_ips:
-            if client_ip == self.web_ingress_private_ip:
-                ssh_host = self.web_ingress_public_ip
-                ssh_username = self.web_ingress_ssh_username
-                proxy = None
-            else:
-                ssh_host = client_ip
-                ssh_username = self.config["ssh_username"]
-                proxy = f"ssh -o StrictHostKeyChecking=no -J {self.web_ingress_ssh_username}@{self.web_ingress_public_ip} {ssh_username}@{client_ip}"
-
-            ssh_client = self.create_ssh_client(
-                ssh_host,
-                ssh_username,
-                proxy=proxy,
+            self.ssh_client_handler.execute_commands(
+                final_commands,
+                (
+                    self.shared_file_system_private_ip
+                    if use_proxy
+                    else self.web_ingress_public_ip
+                ),
+                use_proxy,
             )
 
-            commands = [
-                "sudo apt -y update",
-                "sudo apt-get install -y nfs-common",
-                f'if [ ! -d "{self.shared_dir}" ]; then echo "Creating shared directory: {self.shared_dir}"; sudo mkdir -p "{self.shared_dir}"; fi',
-                f"sudo mount -t nfs {self.shared_ip}:{self.shared_dir} {self.shared_dir}",
-                f'export_line="{self.shared_ip}:{self.shared_dir} {self.shared_dir} nfs rw,hard,intr 0 0"',
-                f'grep -qF -- "$export_line" /etc/fstab || echo "$export_line" | sudo tee -a /etc/fstab',
-            ]
-
-            self.execute_commands(ssh_client, commands)
+    def mount_nfs_clients(self):
+        commands = [
+            "sudo apt -y update",
+            "sudo apt-get install -y nfs-common",
+            f'if [ ! -d "{self.shared_dir}" ]; then echo "Creating shared directory: {self.shared_dir}"; sudo mkdir -p "{self.shared_dir}"; fi',
+            f"sudo mount -t nfs {self.shared_ip}:{self.shared_dir} {self.shared_dir}",
+            f'export_line="{self.shared_ip}:{self.shared_dir} {self.shared_dir} nfs rw,hard,intr 0 0"',
+            f'grep -qF -- "$export_line" /etc/fstab || echo "$export_line" | sudo tee -a /etc/fstab',
+        ]
+        for client_ip in self.nfs_client_private_ips:
+            self.ssh_client_handler.execute_commands(
+                commands,
+                client_ip,
+                (self.web_ingress_private_ip != client_ip),
+            )

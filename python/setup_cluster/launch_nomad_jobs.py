@@ -1,11 +1,13 @@
-import json
-import paramiko
+from ssh_client_handler import SSHClientHandler
 import os
+import tempfile
+import requests
 
 
 class NomadJobDeployer:
-    def __init__(self, config):
+    def __init__(self, config, logger):
         self.config = config
+        self.logger = logger
 
         self.security = self.config.get("security", {})
         self.api = self.config.get("api", {})
@@ -56,65 +58,87 @@ class NomadJobDeployer:
         self.autoscaling_enabled = str(self.autoscaling["enabled"]).lower()
         self.autoscaler_max_count = str(self.autoscaling["max_count"])
 
-        self.initialize_ssh_client()
-
-    def initialize_ssh_client(self):
-        self.ssh = paramiko.SSHClient()
-        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-    def close_ssh_connection(self):
-        """Close the SSH connection if it is open."""
-        try:
-            if self.ssh.get_transport() and self.ssh.get_transport().is_active():
-                self.ssh.close()
-        except Exception as e:
-            print(f"Failed to close SSH connection: {e}")
-
-    def ssh_command(self, host, username, commands, proxy=None):
-        if proxy:
-            proxy = paramiko.ProxyCommand(proxy)
-            self.ssh.connect(hostname=host, username=username, sock=proxy)
-        else:
-            self.ssh.connect(hostname=host, username=username)
-
-        for command in commands:
-            stdin, stdout, stderr = self.ssh.exec_command(command)
-            print(stdout.read().decode())
-            print(stderr.read().decode())
-
-    def get_acl_token(self):
-        if self.web_ingress_private_ip == self.nomad_server_private_ip:
-            ssh_host = self.web_ingress_public_ip
-            ssh_username = self.web_ingress_ssh_username
-            proxy = None
-        else:
-            ssh_host = self.nomad_server_private_ip
-            ssh_username = self.node_ssh_username
-            proxy = f"ssh -o StrictHostKeyChecking=no -J {self.web_ingress_ssh_username}@{self.web_ingress_public_ip} {self.node_ssh_username}@{self.nomad_server_private_ip}"
-
-        command = "grep 'Secret ID' \"/opt/neuraldb_enterprise/nomad_data/task_runner_token.txt\" | awk '{print $NF}'"
-        stdin, stdout, stderr = self.ssh.exec_command(command)
-        acl_token = stdout.read().decode().strip()
-        return acl_token
-
-    def submit_nomad_job(self, job_template, **kwargs):
-        command = f"bash ../nomad/nomad_jobs/submit_nomad_job.sh {self.web_ingress_public_ip} {job_template} {self.acl_token}"
-        for key, value in kwargs.items():
-            command += f" {key}={value}"
-        self.ssh_command(
-            self.nomad_server_private_ip, self.node_ssh_username, [command]
+        self.ssh_client_handler = SSHClientHandler(
+            self.node_ssh_username,
+            self.web_ingress_ssh_username,
+            self.web_ingress_public_ip,
+            logger=logger,
         )
 
-    def deploy_jobs(self):
-        self.acl_token = self.get_acl_token()
+    def get_acl_token(self):
+        command = "grep 'Secret ID' \"/opt/neuraldb_enterprise/nomad_data/task_runner_token.txt\" | awk '{print $NF}'"
 
+        use_jump = self.nomad_server_private_ip != self.web_ingress_private_ip
+        ip = self.nomad_server_private_ip if use_jump else self.web_ingress_public_ip
+        return self.ssh_client_handler.execute_command([command], ip, use_jump)
+
+    def submit_nomad_job(self, nomad_ip, hcl_template, acl_token, **kwargs):
+        """Submit a job to the Nomad server by dynamically replacing placeholders in the HCL template."""
+
+        # Function to replace placeholders in HCL file and return the path of the temporary modified file
+        def replace_placeholders(filepath, replacements):
+            with open(filepath, "r") as file:
+                content = file.read()
+
+            for key, value in replacements.items():
+                content = content.replace(f"{{{{ {key} }}}}", str(value))
+
+            temp_file_path = tempfile.mkstemp()[1]
+            with open(temp_file_path, "w") as temp_file:
+                temp_file.write(content)
+
+            return temp_file_path
+
+        # Function to submit job to Nomad
+        def submit_to_nomad(hcl_file_path, nomad_endpoint, token):
+            headers = {"Content-Type": "application/json", "X-Nomad-Token": token}
+            hcl_to_json_url = f"{nomad_endpoint}v1/jobs/parse"
+            submit_job_url = f"{nomad_endpoint}v1/jobs"
+
+            with open(hcl_file_path, "r") as file:
+                hcl_content = file.read()
+
+            # Convert HCL to JSON using the Nomad API
+            response = requests.post(
+                hcl_to_json_url,
+                headers=headers,
+                json={"JobHCL": hcl_content, "Canonicalize": True},
+            )
+            job_json = response.json()
+
+            # Submit the job JSON to Nomad
+            final_response = requests.post(
+                submit_job_url, headers=headers, json={"Job": job_json}
+            )
+            print(final_response.text)  # Log the response for debugging
+
+            # Cleanup the temporary file
+            os.remove(hcl_file_path)
+
+        nomad_endpoint = f"http://{nomad_ip}:4646/"
+        temp_hcl_path = replace_placeholders(hcl_template, kwargs)
+        submit_to_nomad(temp_hcl_path, nomad_endpoint, acl_token)
+
+    def deploy_jobs(self):
+        """Deploy all necessary jobs to the Nomad server."""
+        acl_token = (
+            self.get_acl_token()
+        )  # Assuming get_acl_token() fetches a valid ACL token
+
+        # Deploy the Traefik job
         self.submit_nomad_job(
+            self.web_ingress_public_ip,
             "../nomad/nomad_jobs/traefik_job.hcl.tpl",
+            acl_token,
             PRIVATE_SERVER_IP=self.nomad_server_private_ip,
             NODE_POOL=self.node_pool,
         )
+
+        # Deploy the Model Bazaar job
         self.submit_nomad_job(
+            self.web_ingress_public_ip,
             "../nomad/nomad_jobs/model_bazaar_job.hcl.tpl",
+            acl_token,
             DB_PASSWORD=self.sql_server_database_password,
             SHARE_DIR=self.shared_dir,
             PUBLIC_SERVER_IP=self.web_ingress_public_ip,
@@ -127,6 +151,10 @@ class NomadJobDeployer:
             AUTOSCALER_MAX_COUNT=self.autoscaler_max_count,
             GENAI_KEY=self.genai_key,
         )
+
+        # Deploy the Nomad Autoscaler job
         self.submit_nomad_job(
+            self.web_ingress_public_ip,
             "../nomad/nomad_jobs/nomad_autoscaler_job.hcl",
+            acl_token,
         )
