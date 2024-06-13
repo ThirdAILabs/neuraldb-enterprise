@@ -51,9 +51,9 @@ class NomadJobDeployer:
         )
 
         self.jwt_secret = self.security["jwt_secret"]
-        self.admin_username = self.security["admin"]["username"]
-        self.admin_mail = self.security["admin"]["email"]
-        self.admin_password = self.security["admin"]["password"]
+        self.admin_username = self.security["ubuntu"]["username"]
+        self.admin_mail = self.security["ubuntu"]["email"]
+        self.admin_password = self.security["ubuntu"]["password"]
         self.genai_key = self.api["genai_key"]
         self.autoscaling_enabled = str(self.autoscaling["enabled"]).lower()
         self.autoscaler_max_count = str(self.autoscaling["max_count"])
@@ -62,28 +62,35 @@ class NomadJobDeployer:
             self.node_ssh_username,
             self.web_ingress_ssh_username,
             self.web_ingress_public_ip,
+            web_ingress_private_ip=self.web_ingress_private_ip,
             logger=logger,
         )
 
     def get_acl_token(self):
-        command = "grep 'Secret ID' \"/opt/neuraldb_enterprise/nomad_data/task_runner_token.txt\" | awk '{print $NF}'"
+        command = "grep 'Secret ID' /opt/neuraldb_enterprise/nomad_data/task_runner_token.txt | awk '{print $NF}'"
 
         use_jump = self.nomad_server_private_ip != self.web_ingress_private_ip
         ip = self.nomad_server_private_ip if use_jump else self.web_ingress_public_ip
-        return self.ssh_client_handler.execute_command([command], ip, use_jump)
+        return self.ssh_client_handler.execute_commands(
+            [command], ip if use_jump else self.web_ingress_public_ip, use_jump
+        )
 
-    def submit_nomad_job(self, nomad_ip, hcl_template, acl_token, **kwargs):
-        """Submit a job to the Nomad server by dynamically replacing placeholders in the HCL template."""
+    def submit_nomad_job(self, nomad_ip, hcl_template, **kwargs):
 
-        # Function to replace placeholders in HCL file and return the path of the temporary modified file
         def replace_placeholders(filepath, replacements):
             with open(filepath, "r") as file:
                 content = file.read()
 
+            self.logger.info(f"Initial Content: {content}")
+            self.logger.info(f"Replacement Content: {kwargs}")
             for key, value in replacements.items():
                 content = content.replace(f"{{{{ {key} }}}}", str(value))
 
-            temp_file_path = tempfile.mkstemp()[1]
+            temp_file = tempfile.NamedTemporaryFile(delete=False, mode="w")
+            temp_file_path = temp_file.name
+
+            self.logger.info(f"Final Content: {content}")
+            # Write the modified content to the temporary file
             with open(temp_file_path, "w") as temp_file:
                 temp_file.write(content)
 
@@ -110,26 +117,26 @@ class NomadJobDeployer:
             final_response = requests.post(
                 submit_job_url, headers=headers, json={"Job": job_json}
             )
-            print(final_response.text)  # Log the response for debugging
+            self.logger.info(final_response.text)  # Log the response for debugging
 
             # Cleanup the temporary file
             os.remove(hcl_file_path)
 
         nomad_endpoint = f"http://{nomad_ip}:4646/"
         temp_hcl_path = replace_placeholders(hcl_template, kwargs)
-        submit_to_nomad(temp_hcl_path, nomad_endpoint, acl_token)
+        submit_to_nomad(temp_hcl_path, nomad_endpoint, kwargs["TASK_RUNNER_TOKEN"])
 
     def deploy_jobs(self):
         """Deploy all necessary jobs to the Nomad server."""
         acl_token = (
             self.get_acl_token()
         )  # Assuming get_acl_token() fetches a valid ACL token
-
+        self.logger.info(f"ACL TOKEN: {acl_token}")
         # Deploy the Traefik job
         self.submit_nomad_job(
             self.web_ingress_public_ip,
-            "../nomad/nomad_jobs/traefik_job.hcl.tpl",
-            acl_token,
+            "../../nomad/nomad_jobs/traefik_job.hcl.tpl",
+            TASK_RUNNER_TOKEN=acl_token,
             PRIVATE_SERVER_IP=self.nomad_server_private_ip,
             NODE_POOL=self.node_pool,
         )
@@ -137,8 +144,8 @@ class NomadJobDeployer:
         # Deploy the Model Bazaar job
         self.submit_nomad_job(
             self.web_ingress_public_ip,
-            "../nomad/nomad_jobs/model_bazaar_job.hcl.tpl",
-            acl_token,
+            "../../nomad/nomad_jobs/model_bazaar_job.hcl.tpl",
+            TASK_RUNNER_TOKEN=acl_token,
             DB_PASSWORD=self.sql_server_database_password,
             SHARE_DIR=self.shared_dir,
             PUBLIC_SERVER_IP=self.web_ingress_public_ip,
@@ -155,6 +162,6 @@ class NomadJobDeployer:
         # Deploy the Nomad Autoscaler job
         self.submit_nomad_job(
             self.web_ingress_public_ip,
-            "../nomad/nomad_jobs/nomad_autoscaler_job.hcl",
-            acl_token,
+            "../../nomad/nomad_jobs/nomad_autoscaler_job.hcl",
+            TASK_RUNNER_TOKEN=acl_token,
         )

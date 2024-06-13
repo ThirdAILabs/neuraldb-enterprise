@@ -11,18 +11,23 @@ class AWSInfrastructure:
         self.ec2 = boto3.client(
             "ec2",
             region_name=self.config["network"]["region"],
-            public_key_material=config["ssh"]["public_key_path"],
         )
 
     def import_key_pair(self):
-        with open(self.config["ssh"]["public_key_path"], "rb") as key_file:
-            public_key_material = key_file.read()
-        response = self.ec2.import_key_pair(
-            KeyName=self.config["ssh"]["key_name"],
-            PublicKeyMaterial=public_key_material,
-        )
-        self.logger.info(f"Key pair imported: {response}")
-        return response["KeyPairId"]
+        try:
+            with open(self.config["ssh"]["public_key_path"], "rb") as key_file:
+                public_key_material = key_file.read()
+
+            response = self.ec2.import_key_pair(
+                KeyName=self.config["ssh"]["key_name"],
+                PublicKeyMaterial=public_key_material,
+            )
+            self.logger.info(f"Key pair imported: {response}")
+            return response["KeyPairId"]
+
+        except Exception as e:
+            self.logger.error(f"An unexpected error occurred: {str(e)}")
+            return None
 
     def create_vpc(self):
         response = self.ec2.create_vpc(
@@ -147,36 +152,46 @@ class AWSInfrastructure:
         self.logger.info("Security group rules configured.")
 
     def launch_instances(self, sg_id, subnet_id):
-        instances = self.ec2.run_instances(
-            ImageId="ami-0c7217cdde317cfec",
-            MinCount=1,
-            MaxCount=self.config["vm_setup"]["vm_count"] + 1,  # Include head node
-            InstanceType=self.config["vm_setup"]["type"],
-            KeyName=self.config["ssh"]["key_name"],
-            SecurityGroupIds=[sg_id],
-            SubnetId=subnet_id,
-            AssociatePublicIpAddress=True,
-            BlockDeviceMappings=[
-                {"DeviceName": "/dev/sda1", "Ebs": {"VolumeSize": 32}}
-            ],
-            TagSpecifications=[
-                {
-                    "ResourceType": "instance",
-                    "Tags": [
-                        {"Key": "Project", "Value": self.config["project"]["name"]}
-                    ],
-                }
-            ],
-        )
-        self.logger.info(f"EC2 instances launched: {instances}")
-        return [instance["InstanceId"] for instance in instances["Instances"]]
+        # TODO(Pratik): Make sure to have ami for different region differently. Right now, it is just for us-east-2.
+        # It's fine to keep ami's hardcoded for region, given we are going to run the programs, and it gives us
+        # consistent environment for running our library
+        instances = []
+        for i in range(self.config["vm_setup"]["vm_count"] + 1):  # Include head node
+            network_interface = {
+                "AssociatePublicIpAddress": True,
+                "SubnetId": subnet_id,
+                "DeviceIndex": 0,  # Primary network interface
+                "Groups": [sg_id],
+            }
 
-    def create_cluster_config(self, instances):
-        instance_ids = [instance["InstanceId"] for instance in instances["Instances"]]
+            instance = self.ec2.run_instances(
+                ImageId="ami-08e2cbfe1b8111c34",
+                MinCount=1,
+                MaxCount=1,
+                InstanceType=self.config["vm_setup"]["type"],
+                KeyName=self.config["ssh"]["key_name"],
+                NetworkInterfaces=[network_interface],
+                BlockDeviceMappings=[
+                    {"DeviceName": "/dev/sda1", "Ebs": {"VolumeSize": 32}}
+                ],
+                TagSpecifications=[
+                    {
+                        "ResourceType": "instance",
+                        "Tags": [
+                            {"Key": "Project", "Value": self.config["project"]["name"]}
+                        ],
+                    }
+                ],
+            )
+            instances.append(instance["Instances"][0]["InstanceId"])
+        self.logger.info(f"Instancer Ids: {instances}")
+        return instances
+
+    def create_cluster_config(self, instance_ids):
         head_node_id = instance_ids[0]
         client_node_ids = instance_ids[1:]
 
-        # Update the configuration file with instance details
+        # Prepare the initial node configuration
         config_data = {
             "nodes": [
                 {
@@ -184,7 +199,7 @@ class AWSInfrastructure:
                     "web_ingress": {
                         "public_ip": "",
                         "run_jobs": True,
-                        "ssh_username": "admin",
+                        "ssh_username": "ubuntu",
                     },
                     "sql_server": {
                         "database_dir": "/opt/neuraldb_enterprise/database",
@@ -197,28 +212,44 @@ class AWSInfrastructure:
                     "nomad_server": True,
                 }
             ],
-            "ssh_username": "admin",
+            "ssh_username": "ubuntu",
         }
 
-        # Update IP addresses in config.json
-        web_ingress_public_ip = self.ec2.describe_instances(InstanceIds=[head_node_id])[
-            "Reservations"
-        ][0]["Instances"][0]["PublicIpAddress"]
-        web_ingress_private_ip = self.ec2.describe_instances(
-            InstanceIds=[head_node_id]
-        )["Reservations"][0]["Instances"][0]["PrivateIpAddress"]
+        # Fetch IP addresses for the head node
+        head_node_info = self.ec2.describe_instances(InstanceIds=[head_node_id])
+        head_instance = head_node_info["Reservations"][0]["Instances"][0]
+        config_data["nodes"][0]["web_ingress"]["public_ip"] = head_instance.get(
+            "PublicIpAddress", ""
+        )
+        config_data["nodes"][0]["private_ip"] = head_instance.get(
+            "PrivateIpAddress", ""
+        )
 
-        config_data["nodes"][0]["web_ingress"]["public_ip"] = web_ingress_public_ip
-        config_data["nodes"][0]["private_ip"] = web_ingress_private_ip
+        # Update configuration with client nodes
+        if client_node_ids:
+            client_info = self.ec2.describe_instances(InstanceIds=client_node_ids)
+            for reservation in client_info["Reservations"]:
+                for instance in reservation["Instances"]:
+                    new_node = {
+                        "private_ip": instance.get("PrivateIpAddress", ""),
+                        "web_ingress": {
+                            "public_ip": instance.get("PublicIpAddress", ""),
+                            "run_jobs": False,
+                            "ssh_username": "admin",
+                        },
+                        "sql_server": {
+                            "database_dir": "/opt/neuraldb_enterprise/database",
+                            "database_password": "password",
+                        },
+                        "shared_file_system": {
+                            "create_nfs_server": False,
+                            "shared_dir": "/opt/neuraldb_enterprise/model_bazaar",
+                        },
+                        "nomad_server": False,
+                    }
+                    config_data["nodes"].append(new_node)
 
-        # Fetch and update client node private IPs in the config.json
-        for client_node_id in client_node_ids:
-            client_node_private_ip = self.ec2.describe_instances(
-                InstanceIds=[client_node_id]
-            )["Reservations"][0]["Instances"][0]["PrivateIpAddress"]
-            new_node = {"private_ip": client_node_private_ip}
-            config_data["nodes"].append(new_node)
-
+        self.logger.info(f"Cluster Config: {config_data}")
         return config_data
 
     def cleanup_resources(
@@ -228,6 +259,7 @@ class AWSInfrastructure:
         sg_id=None,
         igw_id=None,
         subnet_ids=None,
+        rtb_id=None,
         key_pair_name=None,
     ):
         try:
@@ -276,6 +308,31 @@ class AWSInfrastructure:
                         f"Failed to delete Security Group {sg_id}: {str(e)}"
                     )
 
+            if rtb_id:
+                try:
+                    # Retrieve the route table to check for associations
+                    route_table = self.ec2.describe_route_tables(RouteTableIds=[rtb_id])
+                    associations = route_table["RouteTables"][0]["Associations"]
+
+                    # Disassociate any associated subnets
+                    for association in associations:
+                        if not association["Main"]:  # Skip the main association
+                            self.ec2.disassociate_route_table(
+                                AssociationId=association["RouteTableAssociationId"]
+                            )
+                            self.logger.info(
+                                f"Disassociated route table {rtb_id} from subnet."
+                            )
+
+                    # Delete the route table after all associations are removed
+                    self.ec2.delete_route_table(RouteTableId=rtb_id)
+                    self.logger.info(f"Route table {rtb_id} successfully deleted.")
+
+                except Exception as e:
+                    self.logger.error(
+                        f"Failed to delete route table {rtb_id}: {str(e)}"
+                    )
+
             # Delete VPC if exists
             if vpc_id:
                 try:
@@ -293,6 +350,5 @@ class AWSInfrastructure:
                     self.logger.error(
                         f"Failed to delete Key Pair {key_pair_name}: {str(e)}"
                     )
-
         except Exception as e:
             self.logger.error(f"General failure in cleanup_resources: {str(e)}")

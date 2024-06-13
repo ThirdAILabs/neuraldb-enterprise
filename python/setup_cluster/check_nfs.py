@@ -1,6 +1,7 @@
 import paramiko
 import json
 from ssh_client_handler import SSHClientHandler
+import os
 
 
 class NodeStatusChecker:
@@ -20,12 +21,13 @@ class NodeStatusChecker:
         self.shared_dir = next(
             node for node in self.nodes if "shared_file_system" in node
         )["shared_file_system"]["shared_dir"]
-        self.status_file_loc = f"{self.shared_dir}/node_status"
+        self.status_file_loc = os.path.join(self.shared_dir, "node_status")
 
         self.ssh_client_handler = SSHClientHandler(
             self.node_ssh_username,
             self.web_ingress_ssh_username,
             self.web_ingress_public_ip,
+            web_ingress_private_ip=self.web_ingress_private_ip,
             logger=logger,
         )
 
@@ -37,25 +39,25 @@ class NodeStatusChecker:
             use_jump = ip != self.web_ingress_private_ip
             if ip == self.web_ingress_private_ip:
                 ip = self.web_ingress_public_ip
-            result = self.ssh_client_handler.execute_command(command, ip, use_jump)
+            result = self.ssh_client_handler.execute_commands([command], ip, use_jump)
             results.append(result)
         return results
 
     def copy_status_file(self):
+        # TODO(pratik): Write a test matching each of the ip written
         local_path = "./node_status"
-        remote_path = f"{self.web_ingress_ssh_username}@{self.web_ingress_public_ip}:{self.status_file_loc}"
         self.ssh_client_handler.copy_file(
             local_path,
-            remote_path,
-            self.web_ingress_ssh_username,
+            self.status_file_loc,
             self.web_ingress_public_ip,
-            "put",
+            self.web_ingress_ssh_username,
+            "get",
         )
 
     def clean_up(self):
         try:
-            self.ssh_client_handler.execute_command(
-                f"sudo rm -f {self.status_file_loc}", self.web_ingress_public_ip
+            self.ssh_client_handler.execute_commands(
+                [f"sudo rm -f {self.status_file_loc}"], self.web_ingress_public_ip
             )
             return True
         except Exception as e:

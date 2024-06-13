@@ -21,6 +21,17 @@ def load_yaml_config(filepath):
         print("An error occurred during YAML parsing.", exc)
 
 
+def merge_dictionaries(dict1, dict2):
+    # Check for overlapping keys
+    overlapping_keys = dict1.keys() & dict2.keys()
+    if overlapping_keys:
+        raise ValueError(f"Error: Overlapping keys found: {overlapping_keys}")
+
+    # If no overlaps, merge the two dictionaries
+    merged_dict = {**dict1, **dict2}
+    return merged_dict
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Load a YAML configuration file.")
     parser.add_argument(
@@ -36,12 +47,19 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    logger = LoggerConfig(log_file="cluster.log")
+    logger = LoggerConfig(log_file="cluster.log").get_logger("cluster.log")
     logger.info(args)
     config = load_yaml_config(args.yaml)
-    logger.info(config)
 
     if config["cluster_type_config"] == "aws":
+        instance_ids, vpc_id, subnet_id, sg_id, igw_id, rtb_id = (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
         try:
             aws_infra = AWSInfrastructure(config, logger)
 
@@ -55,17 +73,20 @@ def main():
             instance_ids = aws_infra.launch_instances(sg_id, subnet_id)
             nodes_config = aws_infra.create_cluster_config(instance_ids)
         except Exception as e:
-            logger.error("Error occurred, initiating cleanup.")
+            logger.error(f"Error occurred {e}, initiating cleanup.")
             aws_infra.cleanup_resources(
                 instance_ids=instance_ids,
                 vpc_id=vpc_id,
                 sg_id=sg_id,
                 igw_id=igw_id,
                 subnet_ids=[subnet_id],
+                rtb_id=rtb_id,
                 key_pair_name=config["ssh"]["key_name"],
             )
 
-    nfs_manager = NFSSetupManager(config, logger)
+    # TODO(pratik): Write better names here.
+    nodes_config = merge_dictionaries(config, nodes_config)
+    nfs_manager = NFSSetupManager(nodes_config, logger)
     try:
         nfs_manager.setup_shared_file_system()
         nfs_manager.setup_nfs_server()
@@ -73,21 +94,23 @@ def main():
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
 
-    checker = NodeStatusChecker(config, logger)
+    checker = NodeStatusChecker(nodes_config, logger)
     try:
         checker.check_status_on_nodes()
         checker.copy_status_file()
+    except Exception as e:
+        logger.error(f"Error occurred,  {e}")
     finally:
         checker.clean_up()
 
-    cluster_setup = UploadLicense(config, logger)
+    cluster_setup = UploadLicense(nodes_config, logger)
     try:
         cluster_setup.transfer_files()
         cluster_setup.set_permissions()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
 
-    deployer = NomadDeployer(config, logger)
+    deployer = NomadDeployer(nodes_config, logger)
     try:
         deployer.deploy()
         deployer.setup_nomad_cluster()
@@ -96,13 +119,13 @@ def main():
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
 
-    psql_deployer = SQLServerDeployer(config, logger)
+    psql_deployer = SQLServerDeployer(nodes_config, logger)
     try:
         psql_deployer.deploy_sql_server()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
 
-    nomad_job_deployer = NomadJobDeployer(config, logger)
+    nomad_job_deployer = NomadJobDeployer(nodes_config, logger)
     try:
         nomad_job_deployer.deploy_jobs()
     except Exception as e:

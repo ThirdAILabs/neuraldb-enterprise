@@ -23,12 +23,13 @@ class NFSSetupManager:
         self.nfs_client_private_ips = [
             node["private_ip"]
             for node in self.config["nodes"]
-            if node["private_ip"] != self.shared_ip
+            if node["private_ip"] != self.shared_file_system_private_ip
         ]
         self.ssh_client_handler = SSHClientHandler(
             self.node_ssh_username,
             self.web_ingress_ssh_username,
             self.web_ingress_public_ip,
+            self.web_ingress_private_ip,
             logger=logger,
         )
 
@@ -37,7 +38,7 @@ class NFSSetupManager:
             "sudo apt -y update",
             "sudo groupadd -g 4646 nomad_nfs || true",
             "sudo useradd -u 4646 -g 4646 nomad_nfs || true",
-            f"sudo usermod -a -G 4646 {self.ssh_username}",
+            f"sudo usermod -a -G 4646 {self.node_ssh_username}",
             f"sudo mkdir -p {self.shared_dir}",
             f"sudo mkdir -p {self.shared_dir}/license",
             f"sudo mkdir -p {self.shared_dir}/models",
@@ -116,8 +117,8 @@ class NFSSetupManager:
             "sudo apt -y update",
             "sudo apt-get install -y nfs-common",
             f'if [ ! -d "{self.shared_dir}" ]; then echo "Creating shared directory: {self.shared_dir}"; sudo mkdir -p "{self.shared_dir}"; fi',
-            f"sudo mount -t nfs {self.shared_ip}:{self.shared_dir} {self.shared_dir}",
-            f'export_line="{self.shared_ip}:{self.shared_dir} {self.shared_dir} nfs rw,hard,intr 0 0"',
+            f"sudo mount -t nfs {self.shared_file_system_private_ip}:{self.shared_dir} {self.shared_dir}",
+            f'export_line="{self.shared_file_system_private_ip}:{self.shared_dir} {self.shared_dir} nfs rw,hard,intr 0 0"',
             f'grep -qF -- "$export_line" /etc/fstab || echo "$export_line" | sudo tee -a /etc/fstab',
         ]
         for client_ip in self.nfs_client_private_ips:
