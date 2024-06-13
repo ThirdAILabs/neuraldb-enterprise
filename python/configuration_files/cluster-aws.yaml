@@ -16,7 +16,7 @@ network:
 vm_setup:
   type: t2.xlarge
   ssh_username: admin
-  vm_count: 1
+  vm_count: 2
 
 security:
   license_path: /path/to/ndb_enterprise_license.json

@@ -4,13 +4,18 @@ cluster_type_config: azure
 project:
   name: neuraldb-enterprise
 
+
+ssh:
+  key_name: neuraldb-enterprise-key
+  public_key_path: ~/.ssh/id_rsa.pub 
+
 azure_resources:
+  location: centralus
   resource_group_name: neuraldb-enterprise-group
   vnet_name: neuraldb-enterprise-vnet
   subnet_name: neuraldb-enterprise-subnet
   head_node_ipname: neuraldb-enterprise-ip
 
-location: centralus
 
 vm_setup:
   type: Standard_B4ms

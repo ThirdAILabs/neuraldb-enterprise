@@ -83,6 +83,29 @@ def main():
                 rtb_id=rtb_id,
                 key_pair_name=config["ssh"]["key_name"],
             )
+    elif config["cluster_type_config"] == "azure":
+        try:
+            resource_group = azure_vm_creator.create_resource_group()
+            logger.info(f"Resource Group created: {resource_group.id}")
+
+            subnet = azure_vm_creator.create_vnet_and_subnet()
+            logger.info(f"Subnet created: {subnet.id}")
+
+            public_ip = azure_vm_creator.create_public_ip()
+            logger.info(f"Public IP created: {public_ip.ip_address}")
+
+            nic = azure_vm_creator.create_nic(public_ip)
+            logger.info(f"NIC created: {nic.id}")
+
+            for i in range(1, config["vm_setup"]["vm_count"] + 1):
+                vm = azure_vm_creator.create_vm(nic.id, i)
+                logger.info(f"VM {i} created: {vm.id}")
+
+            nodes_config = azure_vm_creator.generate_config_json()
+            logger.info(f"Configuration JSON generated successfully: {config_data}")
+
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
 
     # TODO(pratik): Write better names here.
     nodes_config = merge_dictionaries(config, nodes_config)
