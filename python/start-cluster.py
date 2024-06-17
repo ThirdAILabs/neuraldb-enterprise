@@ -26,12 +26,10 @@ def load_yaml_config(filepath):
 
 
 def merge_dictionaries(dict1, dict2):
-    # Check for overlapping keys
     overlapping_keys = dict1.keys() & dict2.keys()
     if overlapping_keys:
         raise ValueError(f"Error: Overlapping keys found: {overlapping_keys}")
 
-    # If no overlaps, merge the two dictionaries
     merged_dict = {**dict1, **dict2}
     return merged_dict
 
@@ -45,27 +43,29 @@ def parse_arguments():
         required=True,
         help="Path to the YAML configuration file",
     )
+    parser.add_argument(
+        "-l",
+        "--logfile",
+        type=str,
+        required=False,
+        default="neuraldb_enterprise.log",
+        help="Path to the log file",
+    )
+
     return parser.parse_args()
 
 
 def main():
     args = parse_arguments()
 
-    logger = LoggerConfig(log_file="cluster.log").get_logger("cluster.log")
-    logger.info(args)
-    config = load_yaml_config(args.yaml)
+    logger = LoggerConfig(log_file=args.logfile).get_logger(args.logfile)
 
-    if config["cluster_type_config"] == "aws":
-        instance_ids, vpc_id, subnet_id, sg_id, igw_id, rtb_id = (
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
+    user_config = load_yaml_config(args.yaml)
+
+    if user_config["cluster_type_config"] == "aws":
+        instance_ids = vpc_id = subnet_id = sg_id = igw_id = rtb_id = None
         try:
-            aws_infra = AWSInfrastructure(config, logger)
+            aws_infra = AWSInfrastructure(user_config, logger)
 
             key_pair_id = aws_infra.import_key_pair()
             vpc_id = aws_infra.create_vpc()
@@ -75,9 +75,11 @@ def main():
             sg_id = aws_infra.create_security_group(vpc_id)
             aws_infra.setup_security_group_rules(sg_id)
             instance_ids = aws_infra.launch_instances(sg_id, subnet_id)
-            nodes_config = aws_infra.create_cluster_config(instance_ids)
+
+            cluster_config = aws_infra.create_cluster_config(instance_ids)
+
         except Exception as e:
-            logger.error(f"Error occurred {e}, initiating cleanup.")
+            logger.error(f"Error occurred: {e}. Initiating cleanup.")
             aws_infra.cleanup_resources(
                 instance_ids=instance_ids,
                 vpc_id=vpc_id,
@@ -85,44 +87,30 @@ def main():
                 igw_id=igw_id,
                 subnet_ids=[subnet_id],
                 rtb_id=rtb_id,
-                key_pair_name=config["ssh"]["key_name"],
+                key_pair_name=user_config["ssh"]["key_name"],
             )
-    elif config["cluster_type_config"] == "azure":
+
+    elif user_config["cluster_type_config"] == "azure":
         try:
-            azure_vm_creator = AzureInfrastructure(config, logger)
-            resource_group = azure_vm_creator.create_resource_group()
-            logger.info(f"Resource Group created: {resource_group.id}")
+            azure_infra = AzureInfrastructure(config, logger)
 
-            subnet = azure_vm_creator.create_vnet_and_subnet()
-            logger.info(f"Subnet created: {subnet.id}")
-
-            public_ip = azure_vm_creator.create_public_ip()
-            logger.info(f"Public IP created: {public_ip.ip_address}")
-
-            nic = azure_vm_creator.create_nic(public_ip)
-            logger.info(f"NIC created: {nic.id}")
-
-            for i in range(1, config["vm_setup"]["vm_count"] + 1):
-                vm = azure_vm_creator.create_vm(nic.id, i)
-                logger.info(f"VM {i} created: {vm.id}")
-
-            nodes_config = azure_vm_creator.generate_config_json()
-            logger.info(f"Configuration JSON generated successfully: {nodes_config}")
-
-            azure_vm_creator.mount_disk(
-                nodes_config,
-            )
+            resource_group = azure_infra.create_resource_group()
+            _, subnet = azure_infra.create_vnet_and_subnet()
+            public_ip = azure_infra.create_public_ip()
+            azure_infra.deploy_infrastructure(public_ip)
+            azure_infra.create_and_configure_nsg()
+            cluster_config = azure_infra.generate_config_json()
+            azure_infra.mount_disk(cluster_config)
 
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
-    # validate cluster
-    # TODO(pratik): Write better names here.
-    nodes_config = merge_dictionaries(config, nodes_config)
+    user_cluster_config = merge_dictionaries(user_config, cluster_config)
 
-    validator = ClusterValidator(nodes_config)
+    validator = ClusterValidator(user_cluster_config)
     result = validator.validate_cluster()
-    nfs_manager = NFSSetupManager(nodes_config, logger)
+
+    nfs_manager = NFSSetupManager(user_cluster_config, logger)
     try:
         nfs_manager.setup_shared_file_system()
         nfs_manager.setup_nfs_server()
@@ -130,7 +118,7 @@ def main():
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
 
-    checker = NodeStatusChecker(nodes_config, logger)
+    checker = NodeStatusChecker(user_cluster_config, logger)
     try:
         checker.check_status_on_nodes()
         checker.copy_status_file()
@@ -139,14 +127,14 @@ def main():
     finally:
         checker.clean_up()
 
-    cluster_setup = UploadLicense(nodes_config, logger)
+    cluster_setup = UploadLicense(user_cluster_config, logger)
     try:
         cluster_setup.transfer_files()
         cluster_setup.set_permissions()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
 
-    deployer = NomadDeployer(nodes_config, logger)
+    deployer = NomadDeployer(user_cluster_config, logger)
     try:
         deployer.deploy()
         deployer.setup_nomad_cluster()
@@ -155,13 +143,13 @@ def main():
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
 
-    psql_deployer = SQLServerDeployer(nodes_config, logger)
+    psql_deployer = SQLServerDeployer(user_cluster_config, logger)
     try:
         psql_deployer.deploy_sql_server()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
 
-    nomad_job_deployer = NomadJobDeployer(nodes_config, logger)
+    nomad_job_deployer = NomadJobDeployer(user_cluster_config, logger)
     try:
         nomad_job_deployer.deploy_jobs()
     except Exception as e:

@@ -3,7 +3,7 @@ from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.compute.models import VirtualMachineUpdate
-from ssh_client_handler import SSHClientHandler
+from setup_cluster.ssh_client_handler import SSHClientHandler
 import subprocess
 import json
 
