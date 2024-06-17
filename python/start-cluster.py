@@ -11,7 +11,7 @@ from setup_cluster.upload_license import UploadLicense
 from setup_cluster.setup_nomad import NomadDeployer
 from setup_cluster.setup_postgresql import SQLServerDeployer
 from setup_cluster.launch_nomad_jobs import NomadJobDeployer
-from setup_cluster.cluster_check import ClusterValidator
+from setup_cluster.cluster_validate import ClusterValidator
 
 
 def load_yaml_config(filepath):
@@ -105,10 +105,17 @@ def main():
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
+    elif user_config["cluster_type_config"] == "local":
+        pass
+
+    else:
+        raise ValueError("Cluster Type Not Supported.")
+
     user_cluster_config = merge_dictionaries(user_config, cluster_config)
 
-    validator = ClusterValidator(user_cluster_config)
+    validator = ClusterValidator(user_cluster_config, logger)
     result = validator.validate_cluster()
+    logger.debug(f"Cluster validation: {result}")
 
     nfs_manager = NFSSetupManager(user_cluster_config, logger)
     try:

@@ -1,19 +1,10 @@
-import logging
+import warnings
 
 
 class ClusterValidator:
-    def __init__(self, config, logger=None):
+    def __init__(self, config, logger):
         self.config = config
         self.nodes = config["nodes"]
-        if logger is None:
-            logger = logging.getLogger(__name__)
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-            logger.setLevel(logging.DEBUG)
         self.logger = logger
         self.ssh_handler = SSHClientHandler(
             node_ssh_username=config["ssh_username"],
@@ -24,19 +15,36 @@ class ClusterValidator:
         )
 
     def has_public_ip(self):
-        return any("web_ingress" in node for node in self.nodes)
+        has_ip = any("web_ingress" in node for node in self.nodes)
+        if not has_ip:
+            self.logger.error("Validation failed: No nodes have a public IP.")
+        else:
+            self.logger.info("Validation successful: All nodes have a public IP.")
+        return has_ip
 
     def check_ssh_and_sudo_access(self, node_ip):
         commands = ["sudo -n echo Sudo check passed"]
         result = self.ssh_handler.execute_commands(
             commands, node_ip, use_jump=True, run_sequenctially=True
         )
-        return "Sudo check passed" in result if result else False
+        if "Sudo check passed" in result:
+            self.logger.info(f"SSH and sudo access confirmed for {node_ip}.")
+            return True
+        else:
+            self.logger.error(
+                f"Passwordless SSH or sudo access not configured properly on {node_ip}."
+            )
+            return False
 
     def check_internet_access(self, node_ip):
         commands = ["ping -c 3 www.google.com"]
         result = self.ssh_handler.execute_commands(commands, node_ip, use_jump=True)
-        return "0% packet loss" in result
+        if "0% packet loss" in result:
+            self.logger.info(f"Internet access verified for {node_ip}.")
+            return True
+        else:
+            self.logger.error(f"No internet access on {node_ip}.")
+            return False
 
     def check_system_resources(self, node_ip):
         commands = ["cat /proc/meminfo | grep MemTotal", "nproc"]
@@ -46,16 +54,29 @@ class ClusterValidator:
         if result:
             mem_total = int(result.split()[1]) / 1024**2  # Convert kB to GB
             cpu_count = int(result.split()[-1])
-            return mem_total >= 8 and cpu_count >= 1
+            if mem_total >= 8 and cpu_count >= 1:
+                self.logger.info(f"System resources meet requirements for {node_ip}.")
+                return True
+            else:
+                self.logger.error(
+                    f"Insufficient system resources on {node_ip}. Nodes should have atleast 8GB of RAM and 1 CPU."
+                )
+        else:
+            self.logger.warning(f"Failed to retrieve system resources for {node_ip}.")
+            return True
         return False
 
     def check_ubuntu_version(self, node_ip):
         commands = ["lsb_release -a"]
         result = self.ssh_handler.execute_commands(commands, node_ip, use_jump=True)
-        return "Ubuntu 22.04" in result
-
-    def has_public_ip(self):
-        return any("web_ingress" in node for node in self.nodes)
+        if "Ubuntu 22.04" in result:
+            self.logger.info(f"Ubuntu version confirmed on {node_ip}.")
+            return True
+        else:
+            self.logger.error(
+                f"Incorrect Ubuntu version on {node_ip}. Need Ubuntu 22.04."
+            )
+            return False
 
     def check_port_exposure(self, node_ip, ports):
         results = {}
@@ -64,24 +85,17 @@ class ClusterValidator:
             output = self.ssh_handler.execute_commands(commands, node_ip, use_jump=True)
             results[port] = "succeeded" in output if output else False
             if not results[port]:
-                self.logger.warning(
-                    f"Port {port} is not exposed on {node_ip}. Follow the firewall setup instructions."
-                )
+                self.logger.error(f"Port {port} not exposed on {node_ip}.")
+            else:
+                self.logger.info(f"Port {port} exposure confirmed on {node_ip}.")
         return results
 
     def validate_cluster(self):
         if not self.has_public_ip():
-            self.logger.error("No public IP found in any node.")
             return False
 
         results = {}
-        ports_to_check = [
-            22,
-            80,
-            443,
-            4646,
-            5432,
-        ]
+        ports_to_check = [22, 80, 443, 4646, 5432]
         for node in self.nodes:
             node_ip = node["private_ip"]
             results[node_ip] = {
