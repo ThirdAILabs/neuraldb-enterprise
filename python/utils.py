@@ -15,14 +15,6 @@ def validate_cluster_config(config):
         "project": {"name": {}},
         "nodes": {
             "private_ip": {},
-            "web_ingress": {
-                "public_ip": {},
-                "run_jobs": {},
-                "ssh_username": {},
-                "nomad_server": {},
-            },
-            "sql_server": {"database_dir": {}, "database_password": {}},
-            "shared_file_system": {"create_nfs_server": {}, "shared_dir": {}},
         },
         "ssh_username": {},
         "security": {

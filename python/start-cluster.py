@@ -13,6 +13,8 @@ from setup_cluster.setup_postgresql import SQLServerDeployer
 from setup_cluster.launch_nomad_jobs import NomadJobDeployer
 from setup_cluster.cluster_validate import ClusterValidator
 
+from utils import validate_cluster_config
+
 
 def load_yaml_config(filepath):
     try:
@@ -61,6 +63,12 @@ def main():
     logger = LoggerConfig(log_file=args.logfile).get_logger(args.logfile)
 
     user_config = load_yaml_config(args.yaml)
+
+    # Check yaml file content
+    is_valid, msg = validate_cluster_config(user_config)
+    if not is_valid:
+        logger.error(f"Cluster Validation: {msg}")
+        raise ValueError(msg)
 
     if user_config["cluster_type_config"] == "aws":
         instance_ids = vpc_id = subnet_id = sg_id = igw_id = rtb_id = None
