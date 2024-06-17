@@ -6,7 +6,7 @@ project:
 
 ssh:
   key_name: neuraldb-enterprise-key
-  public_key_path: ~/.ssh/id_rsa.pub  # Ensure this path is correct for your setup
+  public_key_path: ~/.ssh/id_rsa.pub
 
 network:
   region: us-east-1

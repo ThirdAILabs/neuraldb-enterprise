@@ -1,22 +1,28 @@
 # Cluster Configuration for NeuralDB Enterprise
 cluster_type_config: local
 
-# Role Assignments and Configurations
-head_node:
-  private_ip: "10.0.0.4"
-  public_ip: "12.34.56.78"
-  ssh_username: "admin"
-  roles:
+project:
+  name: neuraldb-enterprise
+
+nodes:
+  - private_ip: 10.0.0.4
     web_ingress:
+      public_ip: 13.86.94.199
+      run_jobs: true
+      ssh_username: ubuntu
+      nomad_server: true
     sql_server:
-      database_dir: "/opt/neuraldb_enterprise/database"
-      database_password: "password"
+      database_dir: /opt/neuraldb_enterprise/database
+      database_password: password
     shared_file_system:
       create_nfs_server: true
-      shared_dir: "/opt/neuraldb_enterprise/model_bazaar"
-    nomad_server:
+      shared_dir: /opt/neuraldb_enterprise/model_bazaar
+    nomad_server: True
+  - private_ip: 10.0.0.5
+  - private_ip: 10.0.0.6
+  - private_ip: 10.0.0.7
 
-worker_nodes: ["10.0.0.5", "10.0.0.6"]  # List of worker nodes by IP
+ssh_username: ubuntu
 
 security:
   license_path: /path/to/ndb_enterprise_license.json
