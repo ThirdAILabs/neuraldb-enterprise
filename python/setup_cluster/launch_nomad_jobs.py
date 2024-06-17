@@ -51,9 +51,9 @@ class NomadJobDeployer:
         )
 
         self.jwt_secret = self.security["jwt_secret"]
-        self.admin_username = self.security["ubuntu"]["username"]
-        self.admin_mail = self.security["ubuntu"]["email"]
-        self.admin_password = self.security["ubuntu"]["password"]
+        self.admin_username = self.security["admin"]["username"]
+        self.admin_mail = self.security["admin"]["email"]
+        self.admin_password = self.security["admin"]["password"]
         self.genai_key = self.api["genai_key"]
         self.autoscaling_enabled = str(self.autoscaling["enabled"]).lower()
         self.autoscaler_max_count = str(self.autoscaling["max_count"])

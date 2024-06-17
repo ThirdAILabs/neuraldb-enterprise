@@ -1,8 +1,9 @@
-from azure.identity import DefaultAzureCredential
+from azure.identity import AzureCliCredential
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute import ComputeManagementClient
-import logging
+from azure.mgmt.compute.models import VirtualMachineUpdate
+from ssh_client_handler import SSHClientHandler
 import subprocess
 import json
 
@@ -23,7 +24,7 @@ class AzureInfrastructure:
         subscription_id = get_subscription_id()
 
         # https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet
-        self.credential = DefaultAzureCredential()
+        self.credential = AzureCliCredential()
         # https://learn.microsoft.com/en-us/python/api/azure-mgmt-resource/azure.mgmt.resource.resourcemanagementclient?view=azure-python
         self.resource_client = ResourceManagementClient(
             self.credential, subscription_id
@@ -35,11 +36,13 @@ class AzureInfrastructure:
         self.created_resources = []
 
     def create_resource_group(self):
+        self.logger.info(f"create_resource_group started")
         try:
             resource_group = self.resource_client.resource_groups.create_or_update(
                 self.config["azure_resources"]["resource_group_name"],
-                {"location": self.config["azure_resources"]["location"]}
+                {"location": self.config["azure_resources"]["location"]},
             )
+            self.logger.info(f"create_resource_group completed")
             self.created_resources.append(("resource_group", resource_group.name))
             return resource_group
         except Exception as e:
@@ -62,22 +65,26 @@ class AzureInfrastructure:
                 vnet_params,
             ).result()
 
+            self.created_resources.append(
+                ("vnet", self.config["azure_resources"]["vnet_name"])
+            )
+
             subnet_params = {"address_prefix": "10.0.0.0/24"}
             self.logger.info(
                 f"Creating Subnet: {self.config['azure_resources']['subnet_name']}"
             )
-            subnet_result =  self.network_client.subnets.begin_create_or_update(
+            subnet_result = self.network_client.subnets.begin_create_or_update(
                 self.config["azure_resources"]["resource_group_name"],
                 self.config["azure_resources"]["vnet_name"],
                 self.config["azure_resources"]["subnet_name"],
                 subnet_params,
             ).result()
-            
-            self.created_resources.append(("vnet", self.config["azure_resources"]["vnet_name"]))
-            self.created_resources.append(("subnet", rself.config["azure_resources"]["subnet_name"]))
-            return subnet_result
+            self.created_resources.append(
+                ("subnet", self.config["azure_resources"]["subnet_name"])
+            )
+            return vnet_result, subnet_result
 
-         except Exception as e:
+        except Exception as e:
             self.logger.error("Failed to create vnet and subnet: {0}".format(e))
             self.cleanup_resources()
             raise
@@ -91,7 +98,7 @@ class AzureInfrastructure:
             self.logger.info(
                 f"Creating Public IP: {self.config['azure_resources']['head_node_ipname']}"
             )
-            public_ip =  self.network_client.public_ip_addresses.begin_create_or_update(
+            public_ip = self.network_client.public_ip_addresses.begin_create_or_update(
                 self.config["azure_resources"]["resource_group_name"],
                 self.config["azure_resources"]["head_node_ipname"],
                 public_ip_params,
@@ -99,73 +106,290 @@ class AzureInfrastructure:
             self.created_resources.append(("public_ip", public_ip))
             return public_ip
 
-         except Exception as e:
+        except Exception as e:
             self.logger.error("Failed to create public_ips: {0}".format(e))
             self.cleanup_resources()
             raise
-            
 
-    def create_nic(self, public_ip_address):
+    def create_nic(self, vm_name, nic_name, public_ip_address=None):
         try:
             subnet_info = self.network_client.subnets.get(
                 self.config["azure_resources"]["resource_group_name"],
                 self.config["azure_resources"]["vnet_name"],
                 self.config["azure_resources"]["subnet_name"],
             )
-            nic_params = {
-                "location": self.config["azure_resources"]["location"],
-                "ip_configurations": [
+            if public_ip_address:
+                ip_conf = [
                     {
-                        "name": "ipconfig1",
+                        "name": f"ipconfig{vm_name}",
                         "public_ip_address": public_ip_address,
                         "subnet": {"id": subnet_info.id},
                     }
-                ],
+                ]
+            else:
+                ip_conf = [
+                    {
+                        "name": f"ipconfig{vm_name}",
+                        "subnet": {"id": subnet_info.id},
+                        "private_ip_allocation_method": "Dynamic",
+                    }
+                ]
+
+            nic_params = {
+                "location": self.config["azure_resources"]["location"],
+                "ip_configurations": ip_conf,
             }
-            self.logger.info(f"Creating NIC: NomadHeadNic")
+            self.logger.info(f"Creating NIC: {nic_name}")
             nic = self.network_client.network_interfaces.begin_create_or_update(
                 self.config["azure_resources"]["resource_group_name"],
-                "NomadHeadNic",
+                nic_name,
                 nic_params,
             ).result()
-            self.created_resources.append(("nic", "NomadHeadNic"))
+            self.created_resources.append(("nic", nic_name))
             return nic
 
-         except Exception as e:
+        except Exception as e:
             self.logger.error("Failed to create nic: {0}".format(e))
             self.cleanup_resources()
             raise
 
-    def create_vm(self, nic_id, vm_id):
+    def create_vm(self, vm_name, nic):
+        with open(self.config["ssh"]["public_key_path"], "rb") as key_file:
+            public_key_material = key_file.read().decode("utf-8")
+        vm_params = {
+            "location": self.config["azure_resources"]["location"],
+            "os_profile": {
+                "computer_name": vm_name,
+                "admin_username": self.config["vm_setup"]["ssh_username"],
+                "linux_configuration": {
+                    "disable_password_authentication": True,
+                    "ssh": {
+                        "public_keys": [
+                            {
+                                "path": f"/home/{self.config['vm_setup']['ssh_username']}/.ssh/authorized_keys",
+                                "key_data": public_key_material,
+                            }
+                        ]
+                    },
+                },
+            },
+            "hardware_profile": {"vm_size": self.config["vm_setup"]["type"]},
+            "storage_profile": {
+                "image_reference": {
+                    "publisher": "Canonical",
+                    "offer": "0001-com-ubuntu-server-jammy",
+                    "sku": "22_04-lts-gen2",
+                    "version": "latest",
+                }
+            },
+            "network_profile": {"network_interfaces": [{"id": nic.id}]},
+        }
+        self.logger.info(f"Creating VM={vm_name}...")
         try:
-            vm_params = {
-                "location": self.config["azure_resources"]["location"],
-                "os_profile": {
-                    "computer_name": "Head",
-                    "admin_username": self.config["vm_setup"]["ssh_username"],
-                    "admin_password": self.config["security"]["admin"]["password"],
-                },
-                "hardware_profile": {"vm_size": self.config["vm_setup"]["type"]},
-                "storage_profile": {
-                    "image_reference": {
-                        "publisher": "Canonical",
-                        "offer": "UbuntuServer",
-                        "sku": "18.04-LTS",
-                        "version": "latest",
-                    }
-                },
-                "network_profile": {"network_interfaces": [{"id": nic_id}]},
-            }
-            self.logger.info(f"Creating VM: vm_{vm_id}")
-            vms = self.compute_client.virtual_machines.begin_create_or_update(
-                self.config["azure_resources"]["resource_group_name"], f"vm_{vm_id}", vm_params
-            ).result()
-            self.created_resources.append(("vm", f"vm_{vm_id}"))
-            
-         except Exception as e:
-            self.logger.error("Failed to create vms: {0}".format(e))
+            vm_creation_result = (
+                self.compute_client.virtual_machines.begin_create_or_update(
+                    self.config["azure_resources"]["resource_group_name"],
+                    vm_name,
+                    vm_params,
+                ).result()
+            )
+            self.logger.info(f"VM-{vm_name} created successfully.")
+            self.created_resources.append(("vm", vm_name))
+            return vm_creation_result
+        except Exception as e:
+            self.logger.error(f"Failed to create VM-{vm_name}: {e}")
             self.cleanup_resources()
-            raise    
+            raise
+
+    def attach_data_disk(self, vm_name):
+        disk_params = {
+            "location": self.config["azure_resources"]["location"],
+            "disk_size_gb": 1024,
+            "creation_data": {"create_option": "Empty"},
+            "sku": {"name": "Premium_LRS"},
+        }
+        self.logger.info("Creating data disk for Head VM...")
+        try:
+            disk_creation_result = self.compute_client.disks.begin_create_or_update(
+                self.config["azure_resources"]["resource_group_name"],
+                "DataDisk",
+                disk_params,
+            ).result()
+            self.logger.info("Data disk created, attaching...")
+            vm = self.compute_client.virtual_machines.get(
+                self.config["azure_resources"]["resource_group_name"], vm_name
+            )
+            data_disk = {
+                "lun": 0,
+                "name": "DataDisk",
+                "create_option": "Attach",
+                "managed_disk": {"id": disk_creation_result.id},
+            }
+            vm.storage_profile.data_disks.append(data_disk)
+            async_vm_update = self.compute_client.virtual_machines.begin_update(
+                self.config["azure_resources"]["resource_group_name"],
+                vm_name,
+                VirtualMachineUpdate(storage_profile=vm.storage_profile),
+            )
+            result = async_vm_update.result()
+            self.logger.info(f"Data disk attached successfully: {result}")
+        except Exception as e:
+            self.logger.error(f"Failed to attach data disk: {e}")
+            self.cleanup_resources()
+            raise
+
+    def deploy_infrastructure(self, public_ip_address):
+        """Deploys the entire infrastructure with one head node and multiple worker nodes."""
+        self.logger.info("Starting deployment of Azure infrastructure...")
+
+        head_nic = self.create_nic(
+            vm_name=f"Head", nic_name="NodeHeadNic", public_ip_address=public_ip_address
+        )
+
+        head_vm = self.create_vm("Head", head_nic)
+        self.logger.info("Head VM created successfully.")
+
+        self.attach_data_disk("Head")
+        self.logger.info("Data disk attached to Head VM successfully.")
+
+        for i in range(1, self.config["vm_setup"]["vm_count"]):
+            # without public ip
+            worker_nic = self.create_nic(vm_name=f"Node{i}", nic_name=f"Node{i}Nic")
+            self.create_vm(f"Node{i}", worker_nic)
+            self.logger.info(f"Worker VM Node{i} created.")
+
+        self.logger.info("All VMs deployed successfully.")
+
+    def create_and_configure_nsg(self):
+        self.logger.info(
+            "Starting to create and configure network security group (NSG)"
+        )
+        resource_group_name = self.config["azure_resources"]["resource_group_name"]
+        nsg_name = "allowall"
+
+        # Create Network Security Group
+        try:
+            nsg_params = {"location": self.config["azure_resources"]["location"]}
+            nsg_result = (
+                self.network_client.network_security_groups.begin_create_or_update(
+                    resource_group_name, nsg_name, nsg_params
+                ).result()
+            )
+            self.logger.info("Network security group created successfully.")
+        except Exception as e:
+            self.logger.error(f"Failed to create network security group: {e}")
+            raise
+
+        # Create NSG rules
+        try:
+            # Allow all inbound and outbound traffic within the virtual network
+            self.network_client.security_rules.begin_create_or_update(
+                resource_group_name,
+                nsg_name,
+                "AllowAllInbound",
+                {
+                    "priority": 100,
+                    "protocol": "*",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "source_address_prefix": "VirtualNetwork",
+                    "destination_address_prefix": "VirtualNetwork",
+                    "source_port_range": "*",
+                    "destination_port_range": "*",
+                },
+            ).wait()
+            self.network_client.security_rules.begin_create_or_update(
+                resource_group_name,
+                nsg_name,
+                "AllowAllOutbound",
+                {
+                    "priority": 100,
+                    "protocol": "*",
+                    "access": "Allow",
+                    "direction": "Outbound",
+                    "source_address_prefix": "VirtualNetwork",
+                    "destination_address_prefix": "VirtualNetwork",
+                    "source_port_range": "*",
+                    "destination_port_range": "*",
+                },
+            ).wait()
+
+            # Allow SSH traffic from anywhere
+            self.network_client.security_rules.begin_create_or_update(
+                resource_group_name,
+                nsg_name,
+                "AllowSSH",
+                {
+                    "priority": 110,
+                    "protocol": "Tcp",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "source_address_prefix": "*",
+                    "destination_address_prefix": "*",
+                    "source_port_range": "*",
+                    "destination_port_range": "22",
+                },
+            ).wait()
+
+            # Generic rule to allow all inbound traffic from anywhere
+            self.network_client.security_rules.begin_create_or_update(
+                resource_group_name,
+                nsg_name,
+                "AllowAllInboundGeneric",
+                {
+                    "priority": 120,
+                    "protocol": "*",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "source_address_prefix": "*",
+                    "destination_address_prefix": "*",
+                    "source_port_range": "*",
+                    "destination_port_range": "*",
+                },
+            ).wait()
+
+            # Generic rule to allow all outbound traffic to anywhere
+            self.network_client.security_rules.begin_create_or_update(
+                resource_group_name,
+                nsg_name,
+                "AllowAllOutboundGeneric",
+                {
+                    "priority": 130,
+                    "protocol": "*",
+                    "access": "Allow",
+                    "direction": "Outbound",
+                    "source_address_prefix": "*",
+                    "destination_address_prefix": "*",
+                    "source_port_range": "*",
+                    "destination_port_range": "*",
+                },
+            ).wait()
+
+            self.logger.info("NSG rules configured successfully.")
+        except Exception as e:
+            self.logger.error(f"Failed to create NSG rules: {e}")
+            # TODO(pratik): Remember to raise for each expception written to terminate the process there itself and clean
+            raise
+
+        # Update network interfaces to include the NSG
+        try:
+            nic_names = ["NodeHeadNic"] + [
+                f"Node{i}Nic" for i in range(1, self.config["vm_setup"]["vm_count"])
+            ]
+            for nic_name in nic_names:
+                nic = self.network_client.network_interfaces.get(
+                    resource_group_name, nic_name
+                )
+                nic.network_security_group = {"id": nsg_result.id}
+                self.network_client.network_interfaces.begin_create_or_update(
+                    resource_group_name, nic_name, nic
+                ).wait()
+            self.logger.info("Network interfaces updated with NSG successfully.")
+        except Exception as e:
+            self.logger.error(f"Failed to update network interfaces with NSG: {e}")
+            raise
+
+        self.logger.info("NSG creation and configuration completed.")
 
     def generate_config_json(self):
         self.logger.info("Generating configuration JSON file.")
@@ -179,7 +403,6 @@ class AzureInfrastructure:
                         "public_ip": "",
                         "run_jobs": True,
                         "ssh_username": self.config["vm_setup"]["ssh_username"],
-                        "nomad_server": True,
                     },
                     "sql_server": {
                         "database_dir": "/opt/neuraldb_enterprise/database",
@@ -189,6 +412,7 @@ class AzureInfrastructure:
                         "create_nfs_server": True,
                         "shared_dir": "/opt/neuraldb_enterprise/model_bazaar",
                     },
+                    "nomad_server": False,
                 }
             ],
             "ssh_username": self.config["vm_setup"]["ssh_username"],
@@ -202,8 +426,7 @@ class AzureInfrastructure:
     def update_config_with_ips(self, config_data):
         try:
             # Fetch public and private IPs for the head node
-            head_node_name = "Head"
-            head_nic_name = "NomadHeadNic"
+            head_nic_name = "NodeHeadNic"
 
             # Retrieve NIC information for the head node
             nic = self.network_client.network_interfaces.get(
@@ -212,7 +435,9 @@ class AzureInfrastructure:
 
             public_ip_id = nic.ip_configurations[0].public_ip_address.id
             public_ip_address = self.network_client.public_ip_addresses.get(
-                resource_group_name=self.config["azure_resources"]["resource_group_name"],
+                resource_group_name=self.config["azure_resources"][
+                    "resource_group_name"
+                ],
                 public_ip_address_name=public_ip_id.split("/")[-1],
             )
 
@@ -222,31 +447,41 @@ class AzureInfrastructure:
             config_data["nodes"][0]["private_ip"] = nic.ip_configurations[
                 0
             ].private_ip_address
+            config_data["nodes"][0].nomad_server = True
 
             # Add client node IPs
-            for i in range(1, self.config["vm_setup"]["vm_count"] + 1):
+            for i in range(1, self.config["vm_setup"]["vm_count"]):
                 node_name = f"Node{i}"
-                client_nic_name = f"{node_name}VMNic"
+                client_nic_name = f"{node_name}Nic"
                 nic = self.network_client.network_interfaces.get(
-                    self.config["azure_resources"]["resource_group_name"], client_nic_name
+                    self.config["azure_resources"]["resource_group_name"],
+                    client_nic_name,
                 )
                 client_private_ip = nic.ip_configurations[0].private_ip_address
                 config_data["nodes"].append({"private_ip": client_private_ip})
         except Exception as e:
             self.logger.error("Failed to create vms: {0}".format(e))
             self.cleanup_resources()
-            raise  
+            raise
 
-    def mount_disk(
-        self, config_data
-    ):
-        
-        shared_file_system_private_ip = next((node["private_ip"] for node in config_data["nodes"] if node["shared_file_system"]["create_nfs_server"]), None)
-        web_ingress_data = next((node for node in config_data["nodes"] if node["web_ingress"]["run_jobs"]), None)
+    def mount_disk(self, config_data):
+
+        shared_file_system_private_ip = next(
+            (
+                node["private_ip"]
+                for node in config_data["nodes"]
+                if node["shared_file_system"]["create_nfs_server"]
+            ),
+            None,
+        )
+        web_ingress_data = next(
+            (node for node in config_data["nodes"] if node["web_ingress"]["run_jobs"]),
+            None,
+        )
         web_ingress_private_ip = web_ingress_data["private_ip"]
         web_ingress_public_ip = web_ingress_data["web_ingress"]["public_ip"]
         web_ingress_ssh_username = web_ingress_data["web_ingress"]["ssh_username"]
-        
+
         ssh_client_handler = SSHClientHandler(
             config_data["ssh_username"],
             web_ingress_ssh_username,
@@ -255,26 +490,15 @@ class AzureInfrastructure:
             logger=self.logger,
         )
 
-        # Determine SSH command based on IP comparison
-        if web_ingress_private_ip == shared_file_system_private_ip:
-            ssh_command = f"ssh -o StrictHostKeyChecking=no {web_ingress_ssh_username}@{web_ingress_public_ip}"
-        else:
-            ssh_command = f"ssh -o StrictHostKeyChecking=no -J {web_ingress_ssh_username}@{web_ingress_public_ip} {config_data['ssh_username']}@{shared_file_system_private_ip}"
-
-        # Determine if we use jump host based on IP comparison
         use_jump = shared_file_system_private_ip != web_ingress_private_ip
         target_ip = (
-            web_ingress_private_ip if use_jump else shared_file_system_private_ip
+            web_ingress_public_ip if not use_jump else shared_file_system_private_ip
         )
-
-        # Get username for SSH
-        ssh_username = self.config["vm_setup"]["ssh_username"]
-
         # Commands to setup and mount the disk
+        # Note(pratik): disk lun is 0, as we set it up already like that
         commands = f"""
             sudo apt -y update &&
-            disk_lun=$(az vm show --resource-group {resource_group_name} --name Head --query "storageProfile.dataDisks[?name=='DataDisk'].lun" -o tsv) &&
-            device_name="/dev/$(ls -l /dev/disk/azure/scsi1 | grep -oE "lun$disk_lun -> ../../../[a-z]+" | awk -F'/' '{{print $NF}}')" &&
+            device_name="/dev/$(ls -l /dev/disk/azure/scsi1 | grep -oE "lun0 -> ../../../[a-z]+" | awk -F'/' '{{print $NF}}')" &&
             sudo mkfs.xfs $device_name &&
             sudo mkdir -p /opt/neuraldb_enterprise &&
             sudo mount $device_name /opt/neuraldb_enterprise &&
@@ -287,9 +511,7 @@ class AzureInfrastructure:
         """
 
         # Execute the command on the remote machine
-        output = ssh_client_handler.execute_commands(
-            [commands], target_ip, use_jump
-        )
+        output = ssh_client_handler.execute_commands([commands], target_ip, use_jump)
         if output:
             self.logger.info(f"Disk mounted successfully on {target_ip}")
         else:
@@ -301,21 +523,45 @@ class AzureInfrastructure:
             try:
                 if resource_type == "vm":
                     self.logger.info(f"Deleting VM: {resource_name}")
-                    self.compute_client.virtual_machines.begin_delete(self.config["azure_resources"]["resource_group_name"], resource_name).wait()
+                    self.compute_client.virtual_machines.begin_delete(
+                        self.config["azure_resources"]["resource_group_name"],
+                        resource_name,
+                    ).wait()
                 elif resource_type == "nic":
                     self.logger.info(f"Deleting NIC: {resource_name}")
-                    self.network_client.network_interfaces.begin_delete(self.config["azure_resources"]["resource_group_name"], resource_name).wait()
+                    self.network_client.network_interfaces.begin_delete(
+                        self.config["azure_resources"]["resource_group_name"],
+                        resource_name,
+                    ).wait()
                 elif resource_type == "public_ip":
                     self.logger.info(f"Deleting Public IP: {resource_name}")
-                    self.network_client.public_ip_addresses.begin_delete(self.config["azure_resources"]["resource_group_name"], resource_name).wait()
+                    self.network_client.public_ip_addresses.begin_delete(
+                        self.config["azure_resources"]["resource_group_name"],
+                        resource_name,
+                    ).wait()
                 elif resource_type == "subnet":
                     self.logger.info(f"Deleting Subnet: {resource_name}")
-                    self.network_client.subnets.begin_delete(self.config["azure_resources"]["resource_group_name"], self.config["azure_resources"]["vnet_name"], resource_name).wait()
+                    self.network_client.subnets.begin_delete(
+                        self.config["azure_resources"]["resource_group_name"],
+                        self.config["azure_resources"]["vnet_name"],
+                        resource_name,
+                    ).wait()
                 elif resource_type == "vnet":
                     self.logger.info(f"Deleting VNet: {resource_name}")
-                    self.network_client.virtual_networks.begin_delete(self.config["azure_resources"]["resource_group_name"], resource_name).wait()
+                    self.network_client.virtual_networks.begin_delete(
+                        self.config["azure_resources"]["resource_group_name"],
+                        resource_name,
+                    ).wait()
                 elif resource_type == "resource_group":
                     self.logger.info(f"Deleting Resource Group: {resource_name}")
-                    self.resource_client.resource_groups.begin_delete(resource_name).wait()
+                    self.resource_client.resource_groups.begin_delete(
+                        resource_name
+                    ).wait()
+                else:
+                    self.logger.error(
+                        f"Resource Type name not specified: {resource_type}"
+                    )
             except Exception as e:
-                self.logger.error(f"Failed to delete {resource_type} {resource_name}: {e}")
+                self.logger.error(
+                    f"Failed to delete {resource_type} {resource_name}: {e}"
+                )

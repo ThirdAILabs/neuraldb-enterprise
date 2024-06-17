@@ -18,7 +18,7 @@ class SSHClientHandler:
         self.logger = logger
 
     def create_ssh_client(self, ip, username, use_jump=False):
-        self.logger.debug("func: create_ssh_client")
+        self.logger.debug(f"func: create_ssh_client {ip=} {username=} {use_jump=}")
         try:
             jumpbox_channel = None
             if use_jump:

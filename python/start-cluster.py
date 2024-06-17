@@ -1,13 +1,17 @@
 import yaml
 import argparse
 from logger import LoggerConfig
+
 from enterprise_cluster.aws_class import AWSInfrastructure
+from enterprise_cluster.azure_class import AzureInfrastructure
+
 from setup_cluster.create_nfs import NFSSetupManager
 from setup_cluster.check_nfs import NodeStatusChecker
 from setup_cluster.upload_license import UploadLicense
 from setup_cluster.setup_nomad import NomadDeployer
 from setup_cluster.setup_postgresql import SQLServerDeployer
 from setup_cluster.launch_nomad_jobs import NomadJobDeployer
+from setup_cluster.cluster_check import ClusterValidator
 
 
 def load_yaml_config(filepath):
@@ -85,6 +89,7 @@ def main():
             )
     elif config["cluster_type_config"] == "azure":
         try:
+            azure_vm_creator = AzureInfrastructure(config, logger)
             resource_group = azure_vm_creator.create_resource_group()
             logger.info(f"Resource Group created: {resource_group.id}")
 
@@ -102,13 +107,21 @@ def main():
                 logger.info(f"VM {i} created: {vm.id}")
 
             nodes_config = azure_vm_creator.generate_config_json()
-            logger.info(f"Configuration JSON generated successfully: {config_data}")
+            logger.info(f"Configuration JSON generated successfully: {nodes_config}")
+
+            azure_vm_creator.mount_disk(
+                nodes_config,
+            )
 
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
+    # validate cluster
     # TODO(pratik): Write better names here.
     nodes_config = merge_dictionaries(config, nodes_config)
+
+    validator = ClusterValidator(nodes_config)
+    result = validator.validate_cluster()
     nfs_manager = NFSSetupManager(nodes_config, logger)
     try:
         nfs_manager.setup_shared_file_system()
