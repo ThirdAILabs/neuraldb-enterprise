@@ -41,7 +41,7 @@ These instructions will walk through how to set up NeuralDB Enterprise on your L
 5. Navigate into the `install` directory in this repository.
 6. Edit the `variables.sh` file to reflect your desired settings. 
    - Ensure that `license_path` is set correctly to a path on your machine. This should point to the NeuralDB Enterprise License that you recieved in an email.
-   - `admin_mail`, `admin_username`, and `admin_password` will used to create a default admin user for your installation of NeuralDB Enterprise. You will be able to log in to Model Bazaar using these credentials.
+   - `admin_mail`, `admin_username`, and `admin_password` will used to create a default admin user for your installation of NeuralDB Enterprise. You will be able to log in to Model Bazaar using these credentials. `admin_username` and `admin_password` has to be alpha-numeric.
    - Set `genai_key` to the API key for your generative model. Currently, `genai_key` must be an OpenAI key. If this is not set, then generative answers will not be displayed when querying a NeuralDB.
    - `jwt_secret` is used to encrypt authentication tokens for logins to Model Bazaar. This can be set to any random string, but make sure to save this value.
    - `autoscaling_enabled` determines whether NeuralDB Enterprise automatically autoscales the number of deployments under heavy query loads.
