@@ -80,19 +80,3 @@ def validate_cluster_config(config):
         return False, "Unknown cluster type configuration"
 
     return is_valid, message
-
-
-if __name__ == "__main__":
-    args = parse_arguments()
-    config = load_yaml_config(args.yaml)
-    logger = setup_logging(args.logfile)
-
-    logger.info("Loaded configuration file: %s", args.yaml)
-    logger.debug("Configuration content: %s", config)
-
-    # Validate the cluster configuration
-    is_valid, message = validate_cluster_config(config)
-    if is_valid:
-        logger.info("Cluster configuration is valid.")
-    else:
-        logger.error("Cluster configuration is invalid: %s", message)
