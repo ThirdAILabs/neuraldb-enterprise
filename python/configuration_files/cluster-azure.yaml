@@ -2,33 +2,33 @@
 cluster_type_config: azure
 
 project:
-  name: neuraldb-enterprise
+  name: neuraldb-enterprise-pratik-test
 
 
 ssh:
   key_name: neuraldb-enterprise-key
-  public_key_path: ~/.ssh/id_rsa.pub 
+  public_key_path: /Users/pratikqpranav/.ssh/id_rsa.pub
 
 azure_resources:
   location: centralus
-  resource_group_name: neuraldb-enterprise-group
-  vnet_name: neuraldb-enterprise-vnet
-  subnet_name: neuraldb-enterprise-subnet
-  head_node_ipname: neuraldb-enterprise-ip
+  resource_group_name: neuraldb-enterprise-group-pratik-test
+  vnet_name: neuraldb-enterprise-vnet-pratik-test
+  subnet_name: neuraldb-enterprise-subnet-pratik-test
+  head_node_ipname: neuraldb-enterprise-ip-pratik-test
 
 
 vm_setup:
-  type: Standard_B4ms
-  ssh_username: admin
+  type: Standard_B2ms
+  ssh_username: ubuntu
   vm_count: 2
 
 security:
   license_path: /path/to/ndb_enterprise_license.json
   jwt_secret: "1234"  # Change this to a secure, random string
   admin:
-    email: admin@mail.com
-    username: admin
-    password: password
+    email: pratik@thirdai.com
+    username: ubuntu
+    password: pratik-password
 
 api:
   genai_key: open-ai-api-key

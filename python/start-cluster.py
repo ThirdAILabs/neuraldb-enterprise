@@ -1,6 +1,7 @@
 import yaml
 import argparse
 import datetime
+import time
 
 from logger import LoggerConfig
 
@@ -103,7 +104,7 @@ def main():
 
     elif user_config["cluster_type_config"] == "azure":
         try:
-            azure_infra = AzureInfrastructure(config, logger)
+            azure_infra = AzureInfrastructure(user_config, logger)
 
             resource_group = azure_infra.create_resource_group()
             _, subnet = azure_infra.create_vnet_and_subnet()
@@ -112,7 +113,6 @@ def main():
             azure_infra.create_and_configure_nsg()
             cluster_config = azure_infra.generate_config_json()
             azure_infra.mount_disk(cluster_config)
-
         except Exception as e:
             logger.error(f"An error occurred: {e}")
             azure_infra.cleanup_resources()
@@ -176,18 +176,23 @@ def main():
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
 
-
     # dumping the final cluster for info
-    yaml_str = yaml.dump(data, default_flow_style=False, sort_keys=False)
+    yaml_str = yaml.dump(user_cluster_config, default_flow_style=False, sort_keys=False)
 
+    current_time = datetime.datetime.now()
+
+    formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"neuraldb_cluster_config_{user_config['cluster_type_config']}_{formatted_time}.yaml"
     with open(filename, "w") as f:
         f.write(yaml_str)
 
     for node in user_cluster_config["nodes"]:
         if "web_ingress" in node and "public_ip" in node["web_ingress"]:
-        public_ip = node["web_ingress"]["public_ip"]
-        break
+            public_ip = node["web_ingress"]["public_ip"]
+            break
+
+    # TODO(pratik): uvicorn takes time to start, figure out a way to clean that, and have more cleaner approach here.
+    time.sleep(10)
 
     if public_ip:
         print(

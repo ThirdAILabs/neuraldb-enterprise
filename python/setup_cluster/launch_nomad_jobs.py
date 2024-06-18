@@ -1,4 +1,4 @@
-from ssh_client_handler import SSHClientHandler
+from setup_cluster.ssh_client_handler import SSHClientHandler
 import os
 import tempfile
 import requests
@@ -135,7 +135,7 @@ class NomadJobDeployer:
         # Deploy the Traefik job
         self.submit_nomad_job(
             self.web_ingress_public_ip,
-            "../../nomad/nomad_jobs/traefik_job.hcl.tpl",
+            "../nomad/nomad_jobs/traefik_job.hcl.tpl",
             TASK_RUNNER_TOKEN=acl_token,
             PRIVATE_SERVER_IP=self.nomad_server_private_ip,
             NODE_POOL=self.node_pool,
@@ -144,7 +144,7 @@ class NomadJobDeployer:
         # Deploy the Model Bazaar job
         self.submit_nomad_job(
             self.web_ingress_public_ip,
-            "../../nomad/nomad_jobs/model_bazaar_job.hcl.tpl",
+            "../nomad/nomad_jobs/model_bazaar_job.hcl.tpl",
             TASK_RUNNER_TOKEN=acl_token,
             DB_PASSWORD=self.sql_server_database_password,
             SHARE_DIR=self.shared_dir,
@@ -162,6 +162,6 @@ class NomadJobDeployer:
         # Deploy the Nomad Autoscaler job
         self.submit_nomad_job(
             self.web_ingress_public_ip,
-            "../../nomad/nomad_jobs/nomad_autoscaler_job.hcl",
+            "../nomad/nomad_jobs/nomad_autoscaler_job.hcl",
             TASK_RUNNER_TOKEN=acl_token,
         )

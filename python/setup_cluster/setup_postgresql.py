@@ -1,4 +1,4 @@
-from ssh_client_handler import SSHClientHandler
+from setup_cluster.ssh_client_handler import SSHClientHandler
 
 
 class SQLServerDeployer:

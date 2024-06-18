@@ -1,4 +1,5 @@
 import warnings
+from setup_cluster.ssh_client_handler import SSHClientHandler
 
 
 class ClusterValidator:
@@ -22,11 +23,13 @@ class ClusterValidator:
             self.logger.info("Validation successful: All nodes have a public IP.")
         return has_ip
 
-    def check_ssh_and_sudo_access(self, node_ip):
+    def check_ssh_and_sudo_access(self, node_ip, use_jump=True):
         commands = ["sudo -n echo Sudo check passed"]
         result = self.ssh_handler.execute_commands(
-            commands, node_ip, use_jump=True, run_sequenctially=True
+            commands, node_ip, use_jump=use_jump, run_sequenctially=True
         )
+        if not result:
+            return False
         if "Sudo check passed" in result:
             self.logger.info(f"SSH and sudo access confirmed for {node_ip}.")
             return True
@@ -36,9 +39,11 @@ class ClusterValidator:
             )
             return False
 
-    def check_internet_access(self, node_ip):
+    def check_internet_access(self, node_ip, use_jump=True):
         commands = ["ping -c 3 www.google.com"]
-        result = self.ssh_handler.execute_commands(commands, node_ip, use_jump=True)
+        result = self.ssh_handler.execute_commands(commands, node_ip, use_jump=use_jump)
+        if not result:
+            return False
         if "0% packet loss" in result:
             self.logger.info(f"Internet access verified for {node_ip}.")
             return True
@@ -46,11 +51,13 @@ class ClusterValidator:
             self.logger.error(f"No internet access on {node_ip}.")
             return False
 
-    def check_system_resources(self, node_ip):
+    def check_system_resources(self, node_ip, use_jump=True):
         commands = ["cat /proc/meminfo | grep MemTotal", "nproc"]
         result = self.ssh_handler.execute_commands(
-            commands, node_ip, use_jump=True, run_sequenctially=True
+            commands, node_ip, use_jump=use_jump, run_sequenctially=True
         )
+        if not result:
+            return False
         if result:
             mem_total = int(result.split()[1]) / 1024**2  # Convert kB to GB
             cpu_count = int(result.split()[-1])
@@ -66,9 +73,11 @@ class ClusterValidator:
             return True
         return False
 
-    def check_ubuntu_version(self, node_ip):
+    def check_ubuntu_version(self, node_ip, use_jump=True):
         commands = ["lsb_release -a"]
-        result = self.ssh_handler.execute_commands(commands, node_ip, use_jump=True)
+        result = self.ssh_handler.execute_commands(commands, node_ip, use_jump=use_jump)
+        if not result:
+            return False
         if "Ubuntu 22.04" in result:
             self.logger.info(f"Ubuntu version confirmed on {node_ip}.")
             return True
@@ -78,7 +87,7 @@ class ClusterValidator:
             )
             return False
 
-    def check_port_exposure(self, node_ip, ports):
+    def check_port_exposure(self, node_ip, ports, use_jump=True):
         results = {}
         for port in ports:
             commands = [f"nc -zv {node_ip} {port}"]
@@ -98,12 +107,28 @@ class ClusterValidator:
         ports_to_check = [22, 80, 443, 4646, 5432]
         for node in self.nodes:
             node_ip = node["private_ip"]
-            results[node_ip] = {
-                "SSH and Sudo Access": self.check_ssh_and_sudo_access(node_ip),
-                "Internet Access": self.check_internet_access(node_ip),
-                "System Resources": self.check_system_resources(node_ip),
-                "Ubuntu Version": self.check_ubuntu_version(node_ip),
-                "Port Accessibility": self.check_port_exposure(node_ip, ports_to_check),
-            }
+            if "web_ingress" in node:
+                node_ip = self.nodes[0]["web_ingress"]["public_ip"]
+                results[node_ip] = {
+                    "SSH and Sudo Access": self.check_ssh_and_sudo_access(
+                        node_ip, False
+                    ),
+                    "Internet Access": self.check_internet_access(node_ip, False),
+                    "System Resources": self.check_system_resources(node_ip, False),
+                    "Ubuntu Version": self.check_ubuntu_version(node_ip, False),
+                    "Port Accessibility": self.check_port_exposure(
+                        node_ip, ports_to_check, False
+                    ),
+                }
+            else:
+                results[node_ip] = {
+                    "SSH and Sudo Access": self.check_ssh_and_sudo_access(node_ip),
+                    "Internet Access": self.check_internet_access(node_ip),
+                    "System Resources": self.check_system_resources(node_ip),
+                    "Ubuntu Version": self.check_ubuntu_version(node_ip),
+                    "Port Accessibility": self.check_port_exposure(
+                        node_ip, ports_to_check
+                    ),
+                }
 
         return results

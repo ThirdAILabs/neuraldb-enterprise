@@ -1,6 +1,7 @@
 import boto3
 import yaml
 import logging
+import time
 
 
 class AWSInfrastructure:
@@ -150,21 +151,85 @@ class AWSInfrastructure:
         self.ec2.authorize_security_group_ingress(GroupId=sg_id, IpPermissions=rules)
         self.logger.info("Security group rules configured.")
 
+    def check_ami_exists(self, name, description):
+        images = self.ec2.describe_images(
+            Filters=[
+                {"Name": "name", "Values": [name]},
+                {"Name": "description", "Values": [description]},
+            ]
+        )
+        for image in images.get("Images", []):
+            self.logger.info(f"Found existing AMI: {image['ImageId']} with name {name}")
+            return image["ImageId"]
+        return None
+
+    def wait_for_ami(self, ami_id, timeout=600):
+        start_time = time.time()
+        while True:
+            try:
+                response = self.ec2.describe_images(ImageIds=[ami_id])
+                state = response["Images"][0]["State"]
+                self.logger.info(f"Current state of AMI {ami_id}: {state}")
+                if state == "available":
+                    self.logger.info(f"AMI {ami_id} is now available")
+                    return
+                time.sleep(10)
+                if time.time() - start_time >= timeout:
+                    raise TimeoutError(
+                        f"AMI {ami_id} did not become available within {timeout} seconds"
+                    )
+            except Exception as e:
+                self.logger.error(f"Error while checking AMI state: {str(e)}")
+                raise
+
+    def wait_for_instances(self, instance_ids, state="running", timeout=300):
+        waiter_name = f"instance_{state}"
+        waiter = self.ec2.get_waiter(waiter_name)
+        start_time = time.time()
+        try:
+            self.logger.info(
+                f"Waiting for instances {instance_ids} to reach state '{state}'..."
+            )
+            waiter.wait(
+                InstanceIds=instance_ids,
+                WaiterConfig={"Delay": 15, "MaxAttempts": timeout // 15},
+            )
+            self.logger.info(f"Instances {instance_ids} are now in state '{state}'")
+        except Exception as e:
+            if time.time() - start_time >= timeout:
+                raise TimeoutError(
+                    f"Instances {instance_ids} did not reach state '{state}' within {timeout} seconds"
+                )
+            self.logger.error(f"Error while waiting for instances: {str(e)}")
+            raise
+
     def launch_instances(self, sg_id, subnet_id):
         ami_id = "ami-0c7217cdde317cfec"  # Default AMI for us-east-1
         target_region = self.config["network"]["region"]
+        ami_name = "ThirdAI-NeuralDB Copied AMI"
+        description = "Copied AMI to " + target_region
 
-        if target_region != "us-east-1":
-            self.logger.info(f"Copying AMI to {target_region}")
-            # TODO(pratik): Add a way to cleanup AMIs once work is done. As they incur storage cost.
+        existing_ami_id = self.check_ami_exists(ami_name, description)
+        if existing_ami_id:
+            ami_id = existing_ami_id
+            self.logger.info(f"Using existing AMI: {ami_id} in {target_region}")
+        else:
+            self.logger.info(f"No existing AMI found, copying AMI to {target_region}")
             response = self.ec2.copy_image(
-                Name="ThirdAI-NeuralDB Copied AMI",
+                Name=ami_name,
                 SourceImageId=ami_id,
                 SourceRegion="us-east-1",
-                DestinationRegion=target_region,
+                Description=description,
             )
             ami_id = response["ImageId"]
             self.logger.info(f"AMI copied: {ami_id} to {target_region}")
+
+            # Wait for the copied AMI to become available
+            try:
+                self.wait_for_ami(ami_id, timeout=300)  # Extend timeout to 5 minutes
+            except TimeoutError as e:
+                self.logger.error(str(e))
+                raise
 
         instances = []
         for i in range(self.config["vm_setup"]["vm_count"]):  # Include head node
@@ -196,6 +261,7 @@ class AWSInfrastructure:
             )
             instances.append(instance["Instances"][0]["InstanceId"])
         self.logger.info(f"Instancer Ids: {instances}")
+        self.wait_for_instances(instances, state="running", timeout=300)
         return instances
 
     def create_cluster_config(self, instance_ids):
@@ -241,23 +307,7 @@ class AWSInfrastructure:
             client_info = self.ec2.describe_instances(InstanceIds=client_node_ids)
             for reservation in client_info["Reservations"]:
                 for instance in reservation["Instances"]:
-                    new_node = {
-                        "private_ip": instance.get("PrivateIpAddress", ""),
-                        "web_ingress": {
-                            "public_ip": instance.get("PublicIpAddress", ""),
-                            "run_jobs": False,
-                            "ssh_username": "admin",
-                        },
-                        "sql_server": {
-                            "database_dir": "/opt/neuraldb_enterprise/database",
-                            "database_password": "password",
-                        },
-                        "shared_file_system": {
-                            "create_nfs_server": False,
-                            "shared_dir": "/opt/neuraldb_enterprise/model_bazaar",
-                        },
-                        "nomad_server": False,
-                    }
+                    new_node = {"private_ip": instance.get("PrivateIpAddress", "")}
                     config_data["nodes"].append(new_node)
 
         self.logger.info(f"Cluster Config: {config_data}")
