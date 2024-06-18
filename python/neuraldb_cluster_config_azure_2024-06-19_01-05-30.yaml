@@ -1,38 +1,43 @@
-# Cluster configuration for NeuralDB Enterprise on Azure
 cluster_type_config: azure
-
 project:
   name: neuraldb-enterprise-pratik-test
-
-
 ssh:
   key_name: neuraldb-enterprise-key
   public_key_path: /Users/pratikqpranav/.ssh/id_rsa.pub
-
 azure_resources:
   location: centralus
   resource_group_name: neuraldb-enterprise-group-pratik-test
   vnet_name: neuraldb-enterprise-vnet-pratik-test
   subnet_name: neuraldb-enterprise-subnet-pratik-test
   head_node_ipname: neuraldb-enterprise-ip-pratik-test
-
-
 vm_setup:
   type: Standard_B2ms
   ssh_username: ubuntu
   vm_count: 2
-
 security:
-  license_path: /Users/pratikqpranav/Downloads/ndb_enterprise_license.json
-  jwt_secret: "1234"  # Change this to a secure, random string
+  license_path: /path/to/ndb_enterprise_license.json
+  jwt_secret: '1234'
   admin:
     email: pratik@thirdai.com
     username: ubuntu
     password: pratik-password
-
 api:
   genai_key: open-ai-api-key
-
 autoscaling:
   enabled: false
   max_count: 1
+nodes:
+- private_ip: 10.0.0.4
+  web_ingress:
+    public_ip: 52.165.233.134
+    run_jobs: true
+    ssh_username: ubuntu
+  sql_server:
+    database_dir: /opt/neuraldb_enterprise/database
+    database_password: password
+  shared_file_system:
+    create_nfs_server: true
+    shared_dir: /opt/neuraldb_enterprise/model_bazaar
+  nomad_server: true
+- private_ip: 10.0.0.5
+ssh_username: ubuntu

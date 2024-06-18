@@ -365,7 +365,7 @@ class AzureInfrastructure:
                         "create_nfs_server": True,
                         "shared_dir": "/opt/neuraldb_enterprise/model_bazaar",
                     },
-                    "nomad_server": False,
+                    "nomad_server": True,
                 }
             ],
             "ssh_username": self.config["vm_setup"]["ssh_username"],
@@ -397,7 +397,6 @@ class AzureInfrastructure:
         config_data["nodes"][0]["private_ip"] = nic.ip_configurations[
             0
         ].private_ip_address
-        config_data["nodes"][0].nomad_server = True
 
         # Add client node IPs
         for i in range(1, self.config["vm_setup"]["vm_count"]):
