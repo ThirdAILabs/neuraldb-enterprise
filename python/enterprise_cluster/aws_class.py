@@ -151,9 +151,21 @@ class AWSInfrastructure:
         self.logger.info("Security group rules configured.")
 
     def launch_instances(self, sg_id, subnet_id):
-        # TODO(Pratik): Make sure to have ami for different region differently. Right now, it is just for us-east-2.
-        # It's fine to keep ami's hardcoded for region, given we are going to run the programs, and it gives us
-        # consistent environment for running our library
+        ami_id = "ami-0c7217cdde317cfec"  # Default AMI for us-east-1
+        target_region = self.config["network"]["region"]
+
+        if target_region != "us-east-1":
+            self.logger.info(f"Copying AMI to {target_region}")
+            # TODO(pratik): Add a way to cleanup AMIs once work is done. As they incur storage cost.
+            response = self.ec2.copy_image(
+                Name="NeuralDB Copied AMI",
+                SourceImageId=ami_id,
+                SourceRegion="us-east-1",
+                DestinationRegion=target_region,
+            )
+            ami_id = response["ImageId"]
+            self.logger.info(f"AMI copied: {ami_id} to {target_region}")
+
         instances = []
         for i in range(self.config["vm_setup"]["vm_count"] + 1):  # Include head node
             network_interface = {
@@ -164,7 +176,7 @@ class AWSInfrastructure:
             }
 
             instance = self.ec2.run_instances(
-                ImageId="ami-08e2cbfe1b8111c34",
+                ImageId=ami_id,
                 MinCount=1,
                 MaxCount=1,
                 InstanceType=self.config["vm_setup"]["type"],
