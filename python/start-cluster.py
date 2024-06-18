@@ -176,6 +176,8 @@ def main():
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
 
+
+    # dumping the final cluster for info
     yaml_str = yaml.dump(data, default_flow_style=False, sort_keys=False)
 
     filename = f"neuraldb_cluster_config_{user_config['cluster_type_config']}_{formatted_time}.yaml"
@@ -190,9 +192,7 @@ def main():
     if public_ip:
         print(
             f"The Cluster Configuration has been saved. Use the public IP \033[91m{public_ip}\033[0m to access "
-            f"the service. Simply copy the public IP into your browser's address bar. Additionally, "
-            f"you can manage the cluster operations such as checking the status or stopping the cluster "
-            f"with the command: 'python3 stop-cluster.py <final yaml file>'"
+            f"the service. Simply copy the public IP into your browser's address bar."
         )
     else:
         raise ValueError("No public IP found in any node.")
