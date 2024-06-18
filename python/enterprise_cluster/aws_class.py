@@ -158,7 +158,7 @@ class AWSInfrastructure:
             self.logger.info(f"Copying AMI to {target_region}")
             # TODO(pratik): Add a way to cleanup AMIs once work is done. As they incur storage cost.
             response = self.ec2.copy_image(
-                Name="NeuralDB Copied AMI",
+                Name="ThirdAI-NeuralDB Copied AMI",
                 SourceImageId=ami_id,
                 SourceRegion="us-east-1",
                 DestinationRegion=target_region,
@@ -167,7 +167,7 @@ class AWSInfrastructure:
             self.logger.info(f"AMI copied: {ami_id} to {target_region}")
 
         instances = []
-        for i in range(self.config["vm_setup"]["vm_count"] + 1):  # Include head node
+        for i in range(self.config["vm_setup"]["vm_count"]):  # Include head node
             network_interface = {
                 "AssociatePublicIpAddress": True,
                 "SubnetId": subnet_id,
