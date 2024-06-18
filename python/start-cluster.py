@@ -1,5 +1,7 @@
 import yaml
 import argparse
+import datetime
+
 from logger import LoggerConfig
 
 from enterprise_cluster.aws_class import AWSInfrastructure
@@ -97,6 +99,7 @@ def main():
                 rtb_id=rtb_id,
                 key_pair_name=user_config["ssh"]["key_name"],
             )
+            raise
 
     elif user_config["cluster_type_config"] == "azure":
         try:
@@ -112,8 +115,11 @@ def main():
 
         except Exception as e:
             logger.error(f"An error occurred: {e}")
+            azure_infra.cleanup_resources()
+            raise
 
     elif user_config["cluster_type_config"] == "local":
+        cluster_config = {}
         pass
 
     else:
@@ -169,6 +175,27 @@ def main():
         nomad_job_deployer.deploy_jobs()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
+
+    yaml_str = yaml.dump(data, default_flow_style=False, sort_keys=False)
+
+    filename = f"neuraldb_cluster_config_{user_config['cluster_type_config']}_{formatted_time}.yaml"
+    with open(filename, "w") as f:
+        f.write(yaml_str)
+
+    for node in user_cluster_config["nodes"]:
+        if "web_ingress" in node and "public_ip" in node["web_ingress"]:
+        public_ip = node["web_ingress"]["public_ip"]
+        break
+
+    if public_ip:
+        print(
+            f"The Cluster Configuration has been saved. Use the public IP \033[91m{public_ip}\033[0m to access "
+            f"the service. Simply copy the public IP into your browser's address bar. Additionally, "
+            f"you can manage the cluster operations such as checking the status or stopping the cluster "
+            f"with the command: 'python3 stop-cluster.py <final yaml file>'"
+        )
+    else:
+        raise ValueError("No public IP found in any node.")
 
 
 if __name__ == "__main__":

@@ -6,7 +6,6 @@ import logging
 class AWSInfrastructure:
     def __init__(self, config, logger):
         self.logger = logger
-        # TODO(pratik): Add a check whether all the required class is present or not
         self.config = config
         self.ec2 = boto3.client(
             "ec2",

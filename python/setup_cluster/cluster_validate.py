@@ -85,7 +85,7 @@ class ClusterValidator:
             output = self.ssh_handler.execute_commands(commands, node_ip, use_jump=True)
             results[port] = "succeeded" in output if output else False
             if not results[port]:
-                self.logger.error(f"Port {port} not exposed on {node_ip}.")
+                self.logger.warning(f"Port {port} not exposed on {node_ip}.")
             else:
                 self.logger.info(f"Port {port} exposure confirmed on {node_ip}.")
         return results
