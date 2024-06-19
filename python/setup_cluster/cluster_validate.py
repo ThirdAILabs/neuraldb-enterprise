@@ -88,16 +88,15 @@ class ClusterValidator:
             return False
 
     def check_port_exposure(self, node_ip, ports, use_jump=True):
-        results = {}
         for port in ports:
             commands = [f"nc -zv {node_ip} {port}"]
-            output = self.ssh_handler.execute_commands(commands, node_ip, use_jump=True)
-            results[port] = "succeeded" in output if output else False
-            if not results[port]:
-                self.logger.warning(f"Port {port} not exposed on {node_ip}.")
-            else:
-                self.logger.info(f"Port {port} exposure confirmed on {node_ip}.")
-        return results
+            output = self.ssh_handler.execute_commands(
+                commands, node_ip, use_jump=use_jump
+            )
+            if "succeeded" in output:
+                self.logger.error(f"Port {port} is in use on {node_ip}.")
+                return False
+        return True
 
     def validate_cluster(self):
         if not self.has_public_ip():
