@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source variables.sh
+
 # Set up the NFS server on the Head node, and mount the NFS server on each of the clients
 bash setup_nfs.sh
 
@@ -15,7 +17,10 @@ else
     bash setup_nomad.sh
 
     # Set up the PostgreSQL server on the Head node, and install the PostgreSQL client on the client nodes
-    bash setup_postgresql.sh
+    self_hosted_sql_server=$(jq -r 'any(.nodes[]; has("sql_server"))' config.json)
+    if [ $self_hosted_sql_server ]; then
+        bash setup_postgresql.sh
+    fi
 
     # Now we can launch the Model Bazaar jobs onto our nomad cluster 
     bash launch_nomad_jobs.sh

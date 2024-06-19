@@ -40,7 +40,7 @@ EOF
       }
 
       env {
-        DATABASE_URI = "postgresql://modelbazaaruser:{{ DB_PASSWORD }}@{{ PRIVATE_SERVER_IP }}:5432/modelbazaar"
+        DATABASE_URI = "{{ SQL_URI }}"
         PUBLIC_MODEL_BAZAAR_ENDPOINT = "http://{{ PUBLIC_SERVER_IP }}/"
         PRIVATE_MODEL_BAZAAR_ENDPOINT = "http://{{ PRIVATE_SERVER_IP }}/"
         LICENSE_PATH = "/model_bazaar/license/ndb_enterprise_license.json"

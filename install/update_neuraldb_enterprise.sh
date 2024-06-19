@@ -11,7 +11,15 @@ node_ssh_username=$(jq -r '.ssh_username' config.json)
 
 nomad_server_private_ip=$(jq -r '.nodes[] | select(has("nomad_server")) | .private_ip' config.json)
 
-sql_server_database_password=$(jq -r '.nodes[] | select(has("sql_server")) | .sql_server.database_password' config.json)
+self_hosted_sql_server=$(jq -r 'any(.nodes[]; has("sql_server"))' config.json)
+if [ $self_hosted_sql_server ]; then
+    sql_server_database_password=$(jq -r '.nodes[] | select(has("sql_server")) | .sql_server.database_password' config.json)
+    sql_server_private_ip=$(jq -r '.nodes[] | select(has("sql_server")) | .private_ip' config.json)
+    sql_uri="postgresql://modelbazaaruser:${sql_server_database_password}@${sql_server_private_ip}:5432/modelbazaar"
+else
+    sql_uri=$(jq -r '.sql_uri' config.json)
+fi
+
 shared_dir=$(jq -r '.nodes[] | select(has("shared_file_system")) | .shared_file_system.shared_dir' config.json)
 
 if [ $web_ingress_private_ip == $nomad_server_private_ip ]; then
