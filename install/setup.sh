@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source variables.sh
-
 # Set up the NFS server on the Head node, and mount the NFS server on each of the clients
 bash setup_nfs.sh
 
