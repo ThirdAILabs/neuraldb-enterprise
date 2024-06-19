@@ -19,7 +19,7 @@ else
     # Upload the Rag on Rails license to the Nomad cluster
     bash upload_license.sh
 
-    # # Launch the Nomad Server and Clients
+    # Launch the Nomad Server and Clients
     bash setup_nomad.sh
 
     # Set up the PostgreSQL server on the Head node, and install the PostgreSQL client on the client nodes
