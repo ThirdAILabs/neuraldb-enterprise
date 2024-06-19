@@ -153,6 +153,7 @@ class AzureInfrastructure:
             },
             "hardware_profile": {"vm_size": self.config["vm_setup"]["type"]},
             "storage_profile": {
+                # https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-template
                 "image_reference": {
                     "publisher": "Canonical",
                     "offer": "0001-com-ubuntu-server-jammy",

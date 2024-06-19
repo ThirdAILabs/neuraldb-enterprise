@@ -1,12 +1,7 @@
 # Cluster configuration for NeuralDB Enterprise on Azure
 cluster_type_config: azure
 
-project:
-  name: neuraldb-enterprise-pratik-test
-
-
 ssh:
-  key_name: neuraldb-enterprise-key
   public_key_path: /Users/pratikqpranav/.ssh/id_rsa.pub
 
 azure_resources:
