@@ -12,7 +12,7 @@ node_ssh_username=$(jq -r '.ssh_username' config.json)
 nomad_server_private_ip=$(jq -r '.nodes[] | select(has("nomad_server")) | .private_ip' config.json)
 
 self_hosted_sql_server=$(jq -r 'any(.nodes[]; has("sql_server"))' config.json)
-if [ $self_hosted_sql_server ]; then
+if [ "$self_hosted_sql_server" = true ]; then
     sql_server_database_password=$(jq -r '.nodes[] | select(has("sql_server")) | .sql_server.database_password' config.json)
     sql_server_private_ip=$(jq -r '.nodes[] | select(has("sql_server")) | .private_ip' config.json)
     sql_uri="postgresql://modelbazaaruser:${sql_server_database_password}@${sql_server_private_ip}:5432/modelbazaar"
