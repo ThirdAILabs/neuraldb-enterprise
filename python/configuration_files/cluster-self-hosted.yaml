@@ -1,5 +1,5 @@
 # Cluster Configuration for NeuralDB Enterprise
-cluster_type_config: local
+cluster_type_config: self-hosted
 
 project:
   name: neuraldb-enterprise
@@ -10,7 +10,6 @@ nodes:
       public_ip: 192.168.0.13
       run_jobs: true
       ssh_username: sdp
-      nomad_server: true
     sql_server:
       database_dir: /opt/neuraldb_enterprise/database
       database_password: password

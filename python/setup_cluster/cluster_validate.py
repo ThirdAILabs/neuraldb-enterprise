@@ -28,7 +28,7 @@ class ClusterValidator:
     def check_ssh_and_sudo_access(self, node_ip, use_jump=True):
         commands = ["sudo -n echo Sudo check passed"]
         result = self.ssh_handler.execute_commands(
-            commands, node_ip, use_jump=use_jump, run_sequenctially=True
+            commands, node_ip, use_jump=use_jump, run_sequentially=True
         )
         if not result:
             error_message = (
@@ -64,7 +64,7 @@ class ClusterValidator:
     def check_system_resources(self, node_ip, use_jump=True):
         commands = ["cat /proc/meminfo | grep MemTotal", "nproc"]
         result = self.ssh_handler.execute_commands(
-            commands, node_ip, use_jump=use_jump, run_sequenctially=True
+            commands, node_ip, use_jump=use_jump, run_sequentially=True
         )
         if not result:
             error_message = f"Failed to retrieve system resources for {node_ip}."

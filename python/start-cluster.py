@@ -118,7 +118,7 @@ def main():
             azure_infra.cleanup_resources()
             raise
 
-    elif user_config["cluster_type_config"] == "local":
+    elif user_config["cluster_type_config"] == "self-hosted":
         cluster_config = {}
         pass
 

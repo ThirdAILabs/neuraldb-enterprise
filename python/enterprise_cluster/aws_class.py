@@ -260,7 +260,7 @@ class AWSInfrastructure:
                 ],
             )
             instances.append(instance["Instances"][0]["InstanceId"])
-        self.logger.info(f"Instancer Ids: {instances}")
+        self.logger.info(f"Instances Ids: {instances}")
         self.wait_for_instances(instances, state="running", timeout=300)
         return instances
 
@@ -332,7 +332,7 @@ class AWSInfrastructure:
                     )
                 except Exception as e:
                     self.logger.error(
-                        f"Failed to detach or delete Internet Gateway {igw_id}: {str(e)}"
+                        f"Failed to detach or delete Internet Gateway {instance_ids}: {str(e)}"
                     )
 
             # Detach and delete internet gateway if exists

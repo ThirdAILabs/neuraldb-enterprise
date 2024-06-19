@@ -47,14 +47,13 @@ class SSHClientHandler:
             self.logger.error(f"Failed to create SSH client for {ip}: {e}")
             return None
 
-    def execute_commands(self, commands, ip, use_jump=False, run_sequenctially=False):
+    def execute_commands(self, commands, ip, use_jump=False, run_sequentially=False):
         self.logger.debug("func: execute_commands")
-        proxy = None
         try:
             ssh_client = self.create_ssh_client(ip, self.node_ssh_username, use_jump)
             if ssh_client:
                 output = ""
-                if run_sequenctially:
+                if run_sequentially:
                     for command in commands:
                         self.logger.info(f"command: {command}")
                         _, stdout, stderr = ssh_client.exec_command(command)
@@ -88,7 +87,6 @@ class SSHClientHandler:
         self, local_path, remote_path, ip, username, direction="get", use_jump=False
     ):
         self.logger.debug("func: copy_file")
-        proxy = None
         try:
             ssh_client = self.create_ssh_client(ip, username, use_jump)
             self.logger.info(

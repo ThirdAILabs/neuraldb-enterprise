@@ -55,7 +55,7 @@ class NomadDeployer:
                 install_commands,
                 (ip if use_proxy else self.web_ingress_public_ip),
                 use_proxy,
-                run_sequenctially=True,
+                run_sequentially=True,
             )
 
     def setup_nomad_cluster(self):
@@ -87,7 +87,7 @@ class NomadDeployer:
             commands,
             self.nomad_server_private_ip if use_jump else self.web_ingress_public_ip,
             use_jump=use_jump,
-            run_sequenctially=True,
+            run_sequentially=True,
         )
 
         # TODO(pratik): do we even need it? given we wait for ssh command to finish.
@@ -117,7 +117,7 @@ nomad var put -namespace default -token "$management_token" -force nomad/jobs ta
             [command],
             self.nomad_server_private_ip if use_jump else self.web_ingress_public_ip,
             use_jump=(self.web_ingress_private_ip != self.nomad_server_private_ip),
-            run_sequenctially=True,
+            run_sequentially=True,
         )
 
     def start_nomad_clients(self):
@@ -156,5 +156,5 @@ nomad var put -namespace default -token "$management_token" -force nomad/jobs ta
                 commands,
                 nomad_client_private_ip if use_jump else self.web_ingress_public_ip,
                 use_jump=use_jump,
-                run_sequenctially=True,
+                run_sequentially=True,
             )
