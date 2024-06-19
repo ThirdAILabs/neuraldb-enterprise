@@ -132,6 +132,7 @@ class NomadJobDeployer:
             self.get_acl_token()
         )  # Assuming get_acl_token() fetches a valid ACL token
         self.logger.info(f"ACL TOKEN: {acl_token}")
+        # TODO(pratik): Add an error, whenever acl_token is empty.
         # Deploy the Traefik job
         self.submit_nomad_job(
             self.web_ingress_public_ip,
