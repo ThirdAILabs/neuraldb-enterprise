@@ -11,52 +11,52 @@ cluster_type_config:
 # Project settings
 project:
   # Unique name for the project
-  name: "neuraldb-enterprise"
+  name: neuraldb-enterprise
 
 # SSH Configuration
 ssh:
   # Name of the SSH key to be used for accessing VMs
-  key_name: "neuraldb-enterprise-key"
+  key_name: neuraldb-enterprise-key
   # Path to the public SSH key file
-  public_key_path: "/path/to/.ssh/id_rsa.pub"  # Ensure this is an absolute path
+  public_key_path: /path/to/.ssh/id_rsa.pub  # Ensure this is an absolute path
 
 # Network Configuration
 network:
   # AWS region where the resources will be deployed
-  region: "us-east-1"
+  region: us-east-1
   # CIDR block for the VPC
-  vpc_cidr_block: "192.168.0.0/16"
+  vpc_cidr_block: 192.168.0.0/16
   # CIDR block for the subnet within the VPC
-  subnet_cidr_block: "192.168.0.0/24"
+  subnet_cidr_block: 192.168.0.0/24
 
 # VM Setup
 vm_setup:
   # Type of instance to deploy
-  type: "t2.2xlarge"
+  type: t2.2xlarge
   # Default username for the VMs
-  ssh_username: "ubuntu"
+  ssh_username: ubuntu
   # Number of VMs to deploy initially
   vm_count: 2
 
 # Security settings
 security:
   # Path to the license file for NeuralDB Enterprise
-  license_path: "license-key-path"
+  license_path: license-key-path
   # JWT secret used for token generation, should be a secure random string
-  jwt_secret: "1234"  # This should be changed to a secure, random string
+  jwt_secret: 1234  # This should be changed to a secure, random string
   # Admin user configuration
   admin:
     # Email address of the admin user
-    email: "admin@mail.com"
+    email: admin@mail.com
     # Username for admin login
-    username: "admin"
+    username: admin
     # Password for admin login
-    password: "password"
+    password: password
 
 # API Configuration
 api:
   # Key for accessing external APIs, e.g., for integrations or data fetching
-  genai_key: "open-ai-api-key"
+  genai_key: open-ai-api-key
 
 # Autoscaling settings
 autoscaling:
