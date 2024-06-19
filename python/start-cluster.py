@@ -138,6 +138,7 @@ def main():
         nfs_manager.mount_nfs_clients()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
+        raise
 
     checker = NodeStatusChecker(user_cluster_config, logger)
     try:
@@ -145,6 +146,7 @@ def main():
         checker.copy_status_file()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
+        raise
     finally:
         checker.clean_up()
 
@@ -154,6 +156,7 @@ def main():
         cluster_setup.set_permissions()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
+        raise
 
     deployer = NomadDeployer(user_cluster_config, logger)
     try:
@@ -163,18 +166,21 @@ def main():
         deployer.start_nomad_clients()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
+        raise
 
     psql_deployer = SQLServerDeployer(user_cluster_config, logger)
     try:
         psql_deployer.deploy_sql_server()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
+        raise
 
     nomad_job_deployer = NomadJobDeployer(user_cluster_config, logger)
     try:
         nomad_job_deployer.deploy_jobs()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
+        raise
 
     # dumping the final cluster for info
     yaml_str = yaml.dump(user_cluster_config, default_flow_style=False, sort_keys=False)

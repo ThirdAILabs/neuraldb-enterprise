@@ -13,9 +13,7 @@ def validate_cluster_config(config):
     local_required_keys = {
         "cluster_type_config": {},
         "project": {"name": {}},
-        "nodes": {
-            "private_ip": {},
-        },
+        "nodes": [],
         "ssh_username": {},
         "security": {
             "license_path": {},

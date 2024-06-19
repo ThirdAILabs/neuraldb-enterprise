@@ -5,11 +5,11 @@ project:
   name: neuraldb-enterprise
 
 nodes:
-  - private_ip: 10.0.0.4
+  - private_ip: 192.168.0.13
     web_ingress:
-      public_ip: 13.86.94.199
+      public_ip: 192.168.0.13
       run_jobs: true
-      ssh_username: ubuntu
+      ssh_username: sdp
       nomad_server: true
     sql_server:
       database_dir: /opt/neuraldb_enterprise/database
@@ -18,14 +18,12 @@ nodes:
       create_nfs_server: true
       shared_dir: /opt/neuraldb_enterprise/model_bazaar
     nomad_server: True
-  - private_ip: 10.0.0.5
-  - private_ip: 10.0.0.6
-  - private_ip: 10.0.0.7
+  - private_ip: 192.168.0.15
 
-ssh_username: ubuntu
+ssh_username: sdp
 
 security:
-  license_path: /path/to/ndb_enterprise_license.json
+  license_path: /home/sdp/ndb_enterprise_license.json
   jwt_secret: "1234"  # Change this to a secure, random string
   admin:
     email: admin@mail.com
