@@ -1,6 +1,4 @@
 import boto3
-import yaml
-import logging
 import time
 
 
@@ -184,22 +182,27 @@ class AWSInfrastructure:
 
     def wait_for_instances(self, instance_ids, state="running", timeout=300):
         waiter_name = f"instance_{state}"
-        waiter = self.ec2.get_waiter(waiter_name)
-        start_time = time.time()
         try:
-            self.logger.info(
-                f"Waiting for instances {instance_ids} to reach state '{state}'..."
-            )
+            waiter = self.ec2.get_waiter(waiter_name)
+        except ValueError as e:
+            self.logger.error(f"Invalid waiter name: {waiter_name}")
+            raise ValueError(f"Invalid waiter name: {waiter_name}") from e
+
+        self.logger.info(
+            f"Waiting for instances {instance_ids} to reach state '{state}'..."
+        )
+
+        # TODO(pratik): waits for ports to open, do something better here.
+        time.sleep(120)
+
+        try:
             waiter.wait(
                 InstanceIds=instance_ids,
                 WaiterConfig={"Delay": 15, "MaxAttempts": timeout // 15},
             )
             self.logger.info(f"Instances {instance_ids} are now in state '{state}'")
+
         except Exception as e:
-            if time.time() - start_time >= timeout:
-                raise TimeoutError(
-                    f"Instances {instance_ids} did not reach state '{state}' within {timeout} seconds"
-                )
             self.logger.error(f"Error while waiting for instances: {str(e)}")
             raise
 

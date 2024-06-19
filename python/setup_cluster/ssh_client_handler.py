@@ -39,15 +39,17 @@ class SSHClientHandler:
                 ip,
                 username=username,
                 sock=jumpbox_channel,
-                banner_timeout=30,
-                timeout=30,
+                banner_timeout=120,
+                timeout=120,
             )
             return client
         except Exception as e:
             self.logger.error(f"Failed to create SSH client for {ip}: {e}")
             return None
 
-    def execute_commands(self, commands, ip, use_jump=False, run_sequentially=False):
+    def execute_commands(
+        self, commands, ip, use_jump=False, run_sequentially=False, expect_stderr=False
+    ):
         self.logger.debug("func: execute_commands")
         try:
             ssh_client = self.create_ssh_client(ip, self.node_ssh_username, use_jump)
@@ -74,8 +76,8 @@ class SSHClientHandler:
                     output = stdout.read().decode("utf-8").strip()
                     self.logger.info(f"stdout: {output}")
                     err_output = stderr.read().decode()
-                    if err_output:
-                        self.logger.error(f"stderr: {err_output}")
+                    if err_output and not expect_stderr:
+                        self.logger.warning(f"stderr: {err_output}")
                     ssh_client.close()
                     self.logger.info("==========")
                     self.logger.info(output)

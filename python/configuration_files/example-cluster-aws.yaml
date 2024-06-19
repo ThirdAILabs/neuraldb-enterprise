@@ -4,26 +4,24 @@
 # specific needs.
 
 # Cluster type configuration
-cluster_type_config:
-  # Specify the cloud provider, 'aws' in this case.
-  provider: aws
+cluster_type_config: aws
 
 # Project settings
 project:
   # Unique name for the project
-  name: neuraldb-enterprise
+  name: neuraldb-enterprise-demo
 
 # SSH Configuration
 ssh:
   # Name of the SSH key to be used for accessing VMs
   key_name: neuraldb-enterprise-key
   # Path to the public SSH key file
-  public_key_path: /path/to/.ssh/id_rsa.pub  # Ensure this is an absolute path
+  public_key_path: /Users/pratikqpranav/.ssh/id_rsa.pub  # Ensure this is an absolute path
 
 # Network Configuration
 network:
   # AWS region where the resources will be deployed
-  region: us-east-1
+  region: us-west-2
   # CIDR block for the VPC
   vpc_cidr_block: 192.168.0.0/16
   # CIDR block for the subnet within the VPC
@@ -41,15 +39,15 @@ vm_setup:
 # Security settings
 security:
   # Path to the license file for NeuralDB Enterprise
-  license_path: license-key-path
+  license_path: /Users/pratikqpranav/Downloads/ndb_enterprise_license.json
   # JWT secret used for token generation, should be a secure random string
   jwt_secret: 1234  # This should be changed to a secure, random string
   # Admin user configuration
   admin:
     # Email address of the admin user
-    email: admin@mail.com
+    email: pratik@thirdai.com
     # Username for admin login
-    username: admin
+    username: pratik
     # Password for admin login
     password: password
 
