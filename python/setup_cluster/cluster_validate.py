@@ -18,7 +18,9 @@ class ClusterValidator:
     def has_public_ip(self):
         has_ip = any("web_ingress" in node for node in self.nodes)
         if not has_ip:
-            self.logger.error("Validation failed: No nodes have a public IP.")
+            error_message = "Validation failed: No nodes have a public IP."
+            self.logger.error(error_message)
+            raise ValueError(error_message)
         else:
             self.logger.info("Validation successful: All nodes have a public IP.")
         return has_ip
@@ -29,27 +31,35 @@ class ClusterValidator:
             commands, node_ip, use_jump=use_jump, run_sequenctially=True
         )
         if not result:
-            return False
+            error_message = (
+                f"Passwordless SSH or sudo access not configured properly on {node_ip}."
+            )
+            self.logger.error(error_message)
+            raise ValueError(error_message)
         if "Sudo check passed" in result:
             self.logger.info(f"SSH and sudo access confirmed for {node_ip}.")
             return True
         else:
-            self.logger.error(
+            error_message = (
                 f"Passwordless SSH or sudo access not configured properly on {node_ip}."
             )
-            return False
+            self.logger.error(error_message)
+            raise ValueError(error_message)
 
     def check_internet_access(self, node_ip, use_jump=True):
         commands = ["ping -c 3 www.google.com"]
         result = self.ssh_handler.execute_commands(commands, node_ip, use_jump=use_jump)
         if not result:
-            return False
+            error_message = f"No internet access on {node_ip}."
+            self.logger.error(error_message)
+            raise ValueError(error_message)
         if "0% packet loss" in result:
             self.logger.info(f"Internet access verified for {node_ip}.")
             return True
         else:
-            self.logger.error(f"No internet access on {node_ip}.")
-            return False
+            error_message = f"No internet access on {node_ip}."
+            self.logger.error(error_message)
+            raise ValueError(error_message)
 
     def check_system_resources(self, node_ip, use_jump=True):
         commands = ["cat /proc/meminfo | grep MemTotal", "nproc"]
@@ -57,35 +67,33 @@ class ClusterValidator:
             commands, node_ip, use_jump=use_jump, run_sequenctially=True
         )
         if not result:
-            return False
-        if result:
-            mem_total = int(result.split()[1]) / 1024**2  # Convert kB to GB
-            cpu_count = int(result.split()[-1])
-            if mem_total >= 8 and cpu_count >= 1:
-                self.logger.info(f"System resources meet requirements for {node_ip}.")
-                return True
-            else:
-                self.logger.error(
-                    f"Insufficient system resources on {node_ip}. Nodes should have atleast 8GB of RAM and 1 CPU."
-                )
-        else:
-            self.logger.warning(f"Failed to retrieve system resources for {node_ip}.")
+            error_message = f"Failed to retrieve system resources for {node_ip}."
+            self.logger.warning(error_message)
+            raise ValueError(error_message)
+        mem_total = int(result.split()[1]) / 1024**2  # Convert kB to GB
+        cpu_count = int(result.split()[-1])
+        if mem_total >= 8 and cpu_count >= 1:
+            self.logger.info(f"System resources meet requirements for {node_ip}.")
             return True
-        return False
+        else:
+            error_message = f"Insufficient system resources on {node_ip}. Nodes should have at least 8GB of RAM and 1 CPU."
+            self.logger.error(error_message)
+            raise ValueError(error_message)
 
     def check_ubuntu_version(self, node_ip, use_jump=True):
         commands = ["lsb_release -a"]
         result = self.ssh_handler.execute_commands(commands, node_ip, use_jump=use_jump)
         if not result:
-            return False
+            error_message = f"Failed to retrieve Ubuntu version for {node_ip}."
+            self.logger.warning(error_message)
+            raise ValueError(error_message)
         if "Ubuntu 22.04" in result:
             self.logger.info(f"Ubuntu version confirmed on {node_ip}.")
             return True
         else:
-            self.logger.error(
-                f"Incorrect Ubuntu version on {node_ip}. Need Ubuntu 22.04."
-            )
-            return False
+            error_message = f"Incorrect Ubuntu version on {node_ip}. Need Ubuntu 22.04."
+            self.logger.error(error_message)
+            raise ValueError(error_message)
 
     def check_port_exposure(self, node_ip, ports, use_jump=True):
         for port in ports:
@@ -94,8 +102,9 @@ class ClusterValidator:
                 commands, node_ip, use_jump=use_jump
             )
             if "succeeded" in output:
-                self.logger.error(f"Port {port} is in use on {node_ip}.")
-                return False
+                error_message = f"Port {port} is in use on {node_ip}."
+                self.logger.error(error_message)
+                raise ValueError(error_message)
         return True
 
     def validate_cluster(self):

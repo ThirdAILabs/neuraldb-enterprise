@@ -127,9 +127,13 @@ def main():
 
     user_cluster_config = merge_dictionaries(user_config, cluster_config)
 
-    validator = ClusterValidator(user_cluster_config, logger)
-    result = validator.validate_cluster()
-    logger.debug(f"Cluster validation: {result}")
+    try:
+        validator = ClusterValidator(user_cluster_config, logger)
+        result = validator.validate_cluster()
+        logger.debug(f"Cluster validation: {result}")
+    except Exception as e:
+        logger.error(f"Error occurred,  {e}")
+        raise
 
     nfs_manager = NFSSetupManager(user_cluster_config, logger)
     try:
