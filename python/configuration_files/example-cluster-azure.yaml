@@ -4,15 +4,15 @@ cluster_type_config: azure
 
 # SSH configuration for secure shell access to the virtual machines.
 ssh:
-  public_key_path: /Users/pratikqpranav/.ssh/id_rsa.pub  # Path to the public SSH key used for authenticating to VMs.
+  public_key_path: /path/to/.ssh/id_rsa.pub  # Path to the public SSH key used for authenticating to VMs.
 
 # Azure-specific resource configuration for setting up the infrastructure.
 azure_resources:
   location: centralus  # Azure region where the resources will be deployed.
-  resource_group_name: neuraldb-enterprise-group-pratik-test  # Name of the resource group for organizing related resources.
-  vnet_name: neuraldb-enterprise-vnet-pratik-test  # Name of the virtual network to connect the Azure resources.
-  subnet_name: neuraldb-enterprise-subnet-pratik-test  # Subnet within the virtual network.
-  head_node_ipname: neuraldb-enterprise-ip-pratik-test  # Name for the IP configuration of the head node.
+  resource_group_name: neuraldb-enterprise-group  # Name of the resource group for organizing related resources.
+  vnet_name: neuraldb-enterprise-vnet  # Name of the virtual network to connect the Azure resources.
+  subnet_name: neuraldb-enterprise-subnet  # Subnet within the virtual network.
+  head_node_ipname: neuraldb-enterprise-ip  # Name for the IP configuration of the head node.
 
 # VM setup details, including the type and the initial count of virtual machines.
 vm_setup:
@@ -22,12 +22,12 @@ vm_setup:
 
 # Security configurations including paths to license and secrets for authentication.
 security:
-  license_path: /Users/pratikqpranav/Downloads/ndb_enterprise_license.json  # Path to the NeuralDB license file.
+  license_path: /path/to/ndb_enterprise_license.json  # Path to the NeuralDB license file.
   jwt_secret: "1234"  # JWT secret used for token generation, should be replaced with a secure, random string.
   admin:
-    email: pratik@thirdai.com  # Admin email for notifications and alerts.
-    username: ubuntu  # Admin username for system login.
-    password: pratik-password  # Admin password, should be strong and securely stored.
+    email: admin@mail.com  # Admin email for notifications and alerts.
+    username: admin  # Admin username for system login.
+    password: password  # Admin password, should be strong and securely stored.
 
 # API keys and other external integration configurations.
 api:

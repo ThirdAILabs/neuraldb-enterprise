@@ -8,9 +8,9 @@ project:
 
 # Configuration details for the nodes within the cluster.
 nodes:
-  - private_ip: 192.168.0.13  # Internal IP address of the first node.
+  - private_ip: <web_ingress__private_ip>  # Internal IP address of the first node.
     web_ingress:
-      public_ip: 192.168.0.13  # Public IP address for accessing the web interface.
+      public_ip: <web_ingress_public_ip>  # Public IP address for accessing the web interface.
       run_jobs: true  # This node can handle job executions.
       ssh_username: sdp  # SSH username for secure login to this node.
     sql_server:
@@ -20,7 +20,7 @@ nodes:
       create_nfs_server: true  # This node will host an NFS server.
       shared_dir: /opt/neuraldb_enterprise/model_bazaar  # Directory shared across the cluster for model storage.
     nomad_server: True  # This node acts as a Nomad server for job scheduling.
-  - private_ip: 192.168.0.15  # Internal IP address of the second node.
+  - private_ip: <private_ip> # Internal IP address of the second node.
 
 # Global SSH username used for all nodes unless overridden.
 ssh_username: sdp

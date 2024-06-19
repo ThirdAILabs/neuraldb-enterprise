@@ -11,19 +11,19 @@ cluster_type_config:
 # Project settings
 project:
   # Unique name for the project
-  name: "neuraldb-enterprise-pratik-test"
+  name: "neuraldb-enterprise"
 
 # SSH Configuration
 ssh:
   # Name of the SSH key to be used for accessing VMs
-  key_name: "neuraldb-enterprise-key-pratik-test"
+  key_name: "neuraldb-enterprise-key"
   # Path to the public SSH key file
-  public_key_path: "/Users/pratikqpranav/.ssh/id_rsa.pub"  # Ensure this is an absolute path
+  public_key_path: "/path/to/.ssh/id_rsa.pub"  # Ensure this is an absolute path
 
 # Network Configuration
 network:
   # AWS region where the resources will be deployed
-  region: "us-west-2"
+  region: "us-east-1"
   # CIDR block for the VPC
   vpc_cidr_block: "192.168.0.0/16"
   # CIDR block for the subnet within the VPC
@@ -41,17 +41,17 @@ vm_setup:
 # Security settings
 security:
   # Path to the license file for NeuralDB Enterprise
-  license_path: "/Users/pratikqpranav/Downloads/ndb_enterprise_license.json"
+  license_path: "license-key-path"
   # JWT secret used for token generation, should be a secure random string
   jwt_secret: "1234"  # This should be changed to a secure, random string
   # Admin user configuration
   admin:
     # Email address of the admin user
-    email: "pratik@thirdai.com"
+    email: "admin@mail.com"
     # Username for admin login
-    username: "pratik"
+    username: "admin"
     # Password for admin login
-    password: "pratik-password"
+    password: "password"
 
 # API Configuration
 api:
