@@ -73,7 +73,9 @@ class SSHClientHandler:
                     _, stdout, stderr = ssh_client.exec_command(full_command)
                     output = stdout.read().decode("utf-8").strip()
                     self.logger.info(f"stdout: {output}")
-                    self.logger.info(f"stderr: {stderr.read().decode()}")
+                    err_output = stderr.read().decode()
+                    if err_output:
+                        self.logger.error(f"stderr: {err_output}")
                     ssh_client.close()
                     self.logger.info("==========")
                     self.logger.info(output)

@@ -39,8 +39,7 @@ def validate_cluster_config(config):
     }
     azure_required_keys = {
         "cluster_type_config": {},
-        "project": {"name": {}},
-        "ssh": {"key_name": {}, "public_key_path": {}},
+        "ssh": {"public_key_path": {}},
         "azure_resources": {
             "location": {},
             "resource_group_name": {},

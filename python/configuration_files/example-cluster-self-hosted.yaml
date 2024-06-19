@@ -1,0 +1,45 @@
+# Cluster Configuration for deploying NeuralDB Enterprise in a self-hosted environment.
+# This specifies that the cluster will be managed and hosted internally rather than on a cloud platform.
+cluster_type_config: self-hosted
+
+# General project settings for NeuralDB Enterprise.
+project:
+  name: neuraldb-enterprise  # Name of the project.
+
+# Configuration details for the nodes within the cluster.
+nodes:
+  - private_ip: 192.168.0.13  # Internal IP address of the first node.
+    web_ingress:
+      public_ip: 192.168.0.13  # Public IP address for accessing the web interface.
+      run_jobs: true  # This node can handle job executions.
+      ssh_username: sdp  # SSH username for secure login to this node.
+    sql_server:
+      database_dir: /opt/neuraldb_enterprise/database  # Directory where the database files are stored.
+      database_password: password  # Password for database access.
+    shared_file_system:
+      create_nfs_server: true  # This node will host an NFS server.
+      shared_dir: /opt/neuraldb_enterprise/model_bazaar  # Directory shared across the cluster for model storage.
+    nomad_server: True  # This node acts as a Nomad server for job scheduling.
+  - private_ip: 192.168.0.15  # Internal IP address of the second node.
+
+# Global SSH username used for all nodes unless overridden.
+ssh_username: sdp
+
+# Security configurations, including paths to licenses and authentication secrets.
+security:
+  license_path: /home/sdp/ndb_enterprise_license.json  # Path to the license file for NeuralDB Enterprise.
+  jwt_secret: "1234"  # JWT secret for token generation, should be a secure, random string.
+  admin:
+    email: admin@mail.com  # Admin email for contact and notifications.
+    username: admin  # Admin username for logging into the system.
+    password: password  # Admin password, should be strong and securely stored.
+
+# API configuration for external services integration.
+api:
+  genai_key: open-ai-api-key  # API key for OpenAI services integration.
+
+# Autoscaling configuration to manage the number of active nodes dynamically.
+autoscaling:
+  enabled: false  # Indicates whether autoscaling is enabled.
+  max_count: 1  # Maximum number of nodes to which the system can scale.
+
