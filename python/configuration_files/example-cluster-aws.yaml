@@ -45,7 +45,7 @@ security:
   # Admin user configuration
   admin:
     # Email address of the admin user
-    email: pratik@thirdai.com
+    email: admin@mail.com
     # Username for admin login
     username: admin
     # Password for admin login
