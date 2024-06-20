@@ -2,38 +2,56 @@
 # This section specifies the use of Azure as the cloud provider for the cluster.
 cluster_type_config: azure
 
-# SSH configuration for secure shell access to the virtual machines.
+# SSH Configuration
 ssh:
-  public_key_path: /path/to/.ssh/id_rsa.pub  # Path to the public SSH key used for authenticating to VMs.
+  # Path to the public SSH key file
+  public_key_path: /path/to/.ssh/id_rsa.pub
 
 # Azure-specific resource configuration for setting up the infrastructure.
 azure_resources:
-  location: centralus  # Azure region where the resources will be deployed.
-  resource_group_name: thirdai-platform-group  # Name of the resource group for organizing related resources.
-  vnet_name: thirdai-platform-vnet  # Name of the virtual network to connect the Azure resources.
-  subnet_name: thirdai-platform-subnet  # Subnet within the virtual network.
-  head_node_ipname: thirdai-platform-ip  # Name for the IP configuration of the head node.
+  # Azure region where the resources will be deployed.
+  location: centralus  
+  # Name of the resource group for organizing related resources.
+  resource_group_name: thirdai-platform-group
+  # Name of the virtual network to connect the Azure resources.
+  vnet_name: thirdai-platform-vnet
+  # Subnet within the virtual network.
+  subnet_name: thirdai-platform-subnet  
+  # Name for the IP configuration of the head node.
+  head_node_ipname: thirdai-platform-ip  
 
-# VM setup details, including the type and the initial count of virtual machines.
+# VM Setup
 vm_setup:
-  type: Standard_B4ms  # Azure VM type (size) to be used for the cluster nodes.
-  ssh_username: ubuntu  # Default username for SSH access.
-  vm_count: 2  # Number of virtual machines to start with.
+  # Azure VM type (size) to be used for the cluster nodes.
+  type: Standard_B4ms 
+  # Default username for the VMs 
+  ssh_username: ubuntu
+  # Number of VMs to deploy initially
+  vm_count: 2
 
-# Security configurations including paths to license and secrets for authentication.
+# Security settings
 security:
-  license_path: /path/to/ndb_enterprise_license.json  # Path to the NeuralDB license file.
-  jwt_secret: "1234"  # JWT secret used for token generation, should be replaced with a secure, random string.
+  # Path to the license file for NeuralDB Enterprise
+  license_path: /path/to/ndb_enterprise_license.json
+  # JWT secret used for token generation, should be a secure random string
+  jwt_secret: 1234  # This should be changed to a secure, random string
+  # Admin user configuration
   admin:
-    email: admin@mail.com  # Admin email for notifications and alerts.
-    username: admin  # Admin username for system login.
-    password: password  # Admin password, should be strong and securely stored.
+    # Email address of the admin user
+    email: pratik@thirdai.com
+    # Username for admin login
+    username: admin
+    # Password for admin login
+    password: password
 
-# API keys and other external integration configurations.
+# API Configuration
 api:
-  genai_key: open-ai-api-key  # API key for integrating with external AI services like OpenAI.
+  # Key for using OpenAI ChatGPT for summarizing the answers
+  genai_key: open-ai-api-key
 
-# Autoscaling configuration to automatically adjust the number of VMs based on load.
+# Autoscaling settings
 autoscaling:
-  enabled: false  # Whether autoscaling is enabled.
-  max_count: 1  # Maximum number of VMs to which the cluster can scale.
+  # Flag to enable or disable autoscaling
+  enabled: false
+  # Maximum number of VMs that can be automatically provisioned
+  max_count: 1

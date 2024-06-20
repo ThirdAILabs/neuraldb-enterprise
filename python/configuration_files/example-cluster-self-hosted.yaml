@@ -1,10 +1,13 @@
 # Cluster Configuration for deploying NeuralDB Enterprise in a self-hosted environment.
 # This specifies that the cluster will be managed and hosted internally rather than on a cloud platform.
+
+# Cluster type configuration
 cluster_type_config: self-hosted
 
-# General project settings for NeuralDB Enterprise.
+# Project settings
 project:
-  name: thirdai-platform  # Name of the project.
+  # Unique name for the project
+  name: thirdai-platform 
 
 # Configuration details for the nodes within the cluster.
 nodes:
@@ -23,23 +26,32 @@ nodes:
   - private_ip: <private_ip> # Internal IP address of the second node.
 
 # Global SSH username used for all nodes unless overridden.
-ssh_username: sdp
+ssh_username: <machine-username>
 
-# Security configurations, including paths to licenses and authentication secrets.
+# Security settings
 security:
-  license_path: /home/sdp/ndb_enterprise_license.json  # Path to the license file for NeuralDB Enterprise.
-  jwt_secret: "1234"  # JWT secret for token generation, should be a secure, random string.
+  # Path to the license file for NeuralDB Enterprise
+  license_path: /path/to/ndb_enterprise_license.json
+  # JWT secret used for token generation, should be a secure random string
+  jwt_secret: 1234  # This should be changed to a secure, random string
+  # Admin user configuration
   admin:
-    email: admin@mail.com  # Admin email for contact and notifications.
-    username: admin  # Admin username for logging into the system.
-    password: password  # Admin password, should be strong and securely stored.
+    # Email address of the admin user
+    email: pratik@thirdai.com
+    # Username for admin login
+    username: admin
+    # Password for admin login
+    password: password
 
-# API configuration for external services integration.
+# API configuration
 api:
-  genai_key: open-ai-api-key  # API key for OpenAI services integration.
+  # Key for using OpenAI ChatGPT for summarizing the answers
+  genai_key: open-ai-api-key
 
-# Autoscaling configuration to manage the number of active nodes dynamically.
+# Autoscaling settings
 autoscaling:
-  enabled: false  # Indicates whether autoscaling is enabled.
-  max_count: 1  # Maximum number of nodes to which the system can scale.
+  # Flag to enable or disable autoscaling
+  enabled: false
+  # Maximum number of VMs that can be automatically provisioned
+  max_count: 1
 
