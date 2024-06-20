@@ -9,10 +9,10 @@ ssh:
 # Azure-specific resource configuration for setting up the infrastructure.
 azure_resources:
   location: centralus  # Azure region where the resources will be deployed.
-  resource_group_name: neuraldb-enterprise-group  # Name of the resource group for organizing related resources.
-  vnet_name: neuraldb-enterprise-vnet  # Name of the virtual network to connect the Azure resources.
-  subnet_name: neuraldb-enterprise-subnet  # Subnet within the virtual network.
-  head_node_ipname: neuraldb-enterprise-ip  # Name for the IP configuration of the head node.
+  resource_group_name: thirdai-platform-group  # Name of the resource group for organizing related resources.
+  vnet_name: thirdai-platform-vnet  # Name of the virtual network to connect the Azure resources.
+  subnet_name: thirdai-platform-subnet  # Subnet within the virtual network.
+  head_node_ipname: thirdai-platform-ip  # Name for the IP configuration of the head node.
 
 # VM setup details, including the type and the initial count of virtual machines.
 vm_setup:

@@ -64,7 +64,9 @@ class SSHClientHandler:
                         )
                         output += last_command_output
                         self.logger.info(f"stdout: {last_command_output}")
-                        self.logger.info(f"stderr: {stderr.read().decode()}")
+                        err_output = stderr.read().decode()
+                        if err_output and not expect_stderr:
+                            self.logger.warning(f"stderr: {err_output}")
 
                     ssh_client.close()
                     return output

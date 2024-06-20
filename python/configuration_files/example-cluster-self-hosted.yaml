@@ -4,7 +4,7 @@ cluster_type_config: self-hosted
 
 # General project settings for NeuralDB Enterprise.
 project:
-  name: neuraldb-enterprise  # Name of the project.
+  name: thirdai-platform  # Name of the project.
 
 # Configuration details for the nodes within the cluster.
 nodes:
