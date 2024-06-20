@@ -45,7 +45,6 @@ class UploadLicense:
             direction="put",
         )
 
-        # Transfer airgapped license if it exists
         if airgapped_license_path:
             self.ssh_client_handler.copy_file(
                 local_path=airgapped_license_path,
@@ -56,6 +55,7 @@ class UploadLicense:
             )
 
     def set_permissions(self):
+        # TODO(pratik): See whether these are necessary
         command = (
             f"sudo chmod g+rw {self.shared_dir}/license/ndb_enterprise_license.json"
         )

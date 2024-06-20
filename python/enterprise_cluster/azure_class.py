@@ -192,6 +192,8 @@ class AzureInfrastructure:
         vm = self.compute_client.virtual_machines.get(
             self.config["azure_resources"]["resource_group_name"], vm_name
         )
+        # Note(pratik): Each VM on Azure should have their unique lun
+        # number. `0` is fine for now, given we have only one disk.
         data_disk = {
             "lun": 0,
             "name": "DataDisk",
@@ -410,19 +412,38 @@ class AzureInfrastructure:
             client_private_ip = nic.ip_configurations[0].private_ip_address
             config_data["nodes"].append({"private_ip": client_private_ip})
 
+    def get_shared_file_system_private_ip(self, config_data):
+        shared_file_system_private_ip = None
+
+        if "nodes" in config_data and isinstance(config_data["nodes"], list):
+            for node in config_data["nodes"]:
+                if "shared_file_system" in node and isinstance(
+                    node["shared_file_system"], dict
+                ):
+                    if node["shared_file_system"].get("create_nfs_server") == True:
+                        if "private_ip" in node and isinstance(node["private_ip"], str):
+                            shared_file_system_private_ip = node["private_ip"]
+                            break
+
+        return shared_file_system_private_ip
+
+    def get_node_with_web_ingress(self, config_data):
+        node_with_web_ingress = None
+
+        if "nodes" in config_data and isinstance(config_data["nodes"], list):
+            for node in config_data["nodes"]:
+                if "web_ingress" in node and isinstance(node["web_ingress"], dict):
+                    if node["web_ingress"].get("run_jobs") == True:
+                        node_with_web_ingress = node
+                    break
+
+        return node_with_web_ingress
+
     def mount_disk(self, config_data):
-        shared_file_system_private_ip = next(
-            (
-                node["private_ip"]
-                for node in config_data["nodes"]
-                if node["shared_file_system"]["create_nfs_server"]
-            ),
-            None,
+        shared_file_system_private_ip = self.get_shared_file_system_private_ip(
+            config_data
         )
-        web_ingress_data = next(
-            (node for node in config_data["nodes"] if node["web_ingress"]["run_jobs"]),
-            None,
-        )
+        web_ingress_data = self.get_node_with_web_ingress(config_data)
         web_ingress_private_ip = web_ingress_data["private_ip"]
         web_ingress_public_ip = web_ingress_data["web_ingress"]["public_ip"]
         web_ingress_ssh_username = web_ingress_data["web_ingress"]["ssh_username"]
@@ -463,50 +484,42 @@ class AzureInfrastructure:
             self.logger.error(f"Failed to mount disk on {target_ip}")
 
     def cleanup_resources(self):
-        # Reverse the resource creation order for deletion
-        for resource_type, resource_name in reversed(self.created_resources):
-            try:
-                if resource_type == "vm":
-                    self.logger.info(f"Deleting VM: {resource_name}")
-                    self.compute_client.virtual_machines.begin_delete(
-                        self.config["azure_resources"]["resource_group_name"],
-                        resource_name,
-                    ).wait()
-                elif resource_type == "nic":
-                    self.logger.info(f"Deleting NIC: {resource_name}")
-                    self.network_client.network_interfaces.begin_delete(
-                        self.config["azure_resources"]["resource_group_name"],
-                        resource_name,
-                    ).wait()
-                elif resource_type == "public_ip":
-                    self.logger.info(f"Deleting Public IP: {resource_name}")
-                    self.network_client.public_ip_addresses.begin_delete(
-                        self.config["azure_resources"]["resource_group_name"],
-                        resource_name,
-                    ).wait()
-                elif resource_type == "subnet":
-                    self.logger.info(f"Deleting Subnet: {resource_name}")
-                    self.network_client.subnets.begin_delete(
-                        self.config["azure_resources"]["resource_group_name"],
-                        self.config["azure_resources"]["vnet_name"],
-                        resource_name,
-                    ).wait()
-                elif resource_type == "vnet":
-                    self.logger.info(f"Deleting VNet: {resource_name}")
-                    self.network_client.virtual_networks.begin_delete(
-                        self.config["azure_resources"]["resource_group_name"],
-                        resource_name,
-                    ).wait()
-                elif resource_type == "resource_group":
-                    self.logger.info(f"Deleting Resource Group: {resource_name}")
-                    self.resource_client.resource_groups.begin_delete(
-                        resource_name
-                    ).wait()
-                else:
-                    self.logger.error(
-                        f"Resource Type name not specified: {resource_type}"
-                    )
-            except Exception as e:
-                self.logger.error(
-                    f"Failed to delete {resource_type} {resource_name}: {e}. You may need to manually delete it."
+        resource_group_name = self.config["azure_resources"]["resource_group_name"]
+
+        try:
+            self.logger.info(
+                f"Checking if Resource Group {resource_group_name} exists..."
+            )
+            resource_group_exists = self.check_resource_group_exists(
+                resource_group_name
+            )
+
+            if resource_group_exists:
+                self.logger.info(f"Deleting Resource Group: {resource_group_name}")
+
+                self.resource_client.resource_groups.begin_delete(
+                    resource_group_name
+                ).wait()
+
+                self.logger.info(
+                    f"Resource Group {resource_group_name} deleted successfully."
                 )
+            else:
+                self.logger.info(
+                    f"Resource Group {resource_group_name} does not exist. No deletion needed."
+                )
+
+        except Exception as e:
+            self.logger.error(
+                f"Failed to delete Resource Group {resource_group_name}: {e}. You may need to manually address this issue."
+            )
+
+    def check_resource_group_exists(self, resource_group_name):
+        try:
+            resource_group = self.resource_client.resource_groups.get(
+                resource_group_name
+            )
+            return True if resource_group else False
+        except Exception as e:
+            self.logger.info(f"Resource Group {resource_group_name} not found: {e}")
+            return False

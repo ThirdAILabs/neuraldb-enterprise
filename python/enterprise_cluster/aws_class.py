@@ -192,9 +192,6 @@ class AWSInfrastructure:
             f"Waiting for instances {instance_ids} to reach state '{state}'..."
         )
 
-        # TODO(pratik): waits for ports to open, do something better here.
-        time.sleep(120)
-
         try:
             waiter.wait(
                 InstanceIds=instance_ids,
@@ -316,103 +313,87 @@ class AWSInfrastructure:
         self.logger.info(f"Cluster Config: {config_data}")
         return config_data
 
-    def cleanup_resources(
-        self,
-        instance_ids=None,
-        vpc_id=None,
-        sg_id=None,
-        igw_id=None,
-        subnet_ids=None,
-        rtb_id=None,
-        key_pair_name=None,
-    ):
-        try:
-            if instance_ids:
-                try:
-                    self.ec2.terminate_instances(InstanceIds=instance_ids)
-                    self.ec2.get_waiter("instance_terminated").wait(
-                        InstanceIds=instance_ids
-                    )
-                except Exception as e:
-                    self.logger.error(
-                        f"Failed to detach or delete Internet Gateway {instance_ids}: {str(e)}"
-                    )
+    def cleanup_resources(self):
+        project_name = self.config["project"]["name"]
 
-            # Detach and delete internet gateway if exists
-            if igw_id and vpc_id:
-                try:
-                    self.ec2.detach_internet_gateway(
-                        InternetGatewayId=igw_id, VpcId=vpc_id
-                    )
-                    self.ec2.delete_internet_gateway(InternetGatewayId=igw_id)
-                    self.logger.info(f"Internet Gateway {igw_id} detached and deleted.")
-                except Exception as e:
-                    self.logger.error(
-                        f"Failed to detach or delete Internet Gateway {igw_id}: {str(e)}"
-                    )
+        instance_ids = self.get_resource_ids("instance", project_name)
+        subnet_ids = self.get_resource_ids("subnet", project_name)
+        sg_ids = self.get_resource_ids("security-group", project_name)
+        rt_ids = self.get_resource_ids("route-table", project_name)
+        igw_ids = self.get_resource_ids("internet-gateway", project_name)
+        vpc_ids = self.get_resource_ids("vpc", project_name)
 
-            # Delete subnets if exist
-            if subnet_ids:
-                for subnet_id in subnet_ids:
-                    try:
-                        self.ec2.delete_subnet(SubnetId=subnet_id)
-                        self.logger.info(f"Subnet {subnet_id} deleted.")
-                    except Exception as e:
-                        self.logger.error(
-                            f"Failed to delete Subnet {subnet_id}: {str(e)}"
-                        )
+        self.terminate_instances(instance_ids)
+        self.delete_subnets(subnet_ids)
+        self.delete_security_groups(sg_ids)
+        self.delete_route_tables(rt_ids)
+        self.detach_delete_internet_gateways(igw_ids)
+        self.delete_vpcs(vpc_ids)
 
-            # Delete security group if exists
-            if sg_id:
-                try:
-                    self.ec2.delete_security_group(GroupId=sg_id)
-                    self.logger.info(f"Security Group {sg_id} deleted.")
-                except Exception as e:
-                    self.logger.error(
-                        f"Failed to delete Security Group {sg_id}: {str(e)}"
-                    )
+    def get_resource_ids(self, resource_type, project_name):
 
-            if rtb_id:
-                try:
-                    # Retrieve the route table to check for associations
-                    route_table = self.ec2.describe_route_tables(RouteTableIds=[rtb_id])
-                    associations = route_table["RouteTables"][0]["Associations"]
+        if resource_type == "instance":
+            reservations = self.ec2.describe_instances(
+                Filters=[{"Name": "tag:Project", "Values": [project_name]}]
+            )["Reservations"]
+            return [
+                inst["InstanceId"] for res in reservations for inst in res["Instances"]
+            ]
+        elif resource_type == "subnet":
+            subnets = self.ec2.describe_subnets(
+                Filters=[{"Name": "tag:Project", "Values": [project_name]}]
+            )["Subnets"]
+            return [subnet["SubnetId"] for subnet in subnets]
+        elif resource_type == "security-group":
+            sgs = self.ec2.describe_security_groups(
+                Filters=[{"Name": "tag:Project", "Values": [project_name]}]
+            )["SecurityGroups"]
+            return [sg["GroupId"] for sg in sgs]
+        elif resource_type == "route-table":
+            rts = self.ec2.describe_route_tables(
+                Filters=[{"Name": "tag:Project", "Values": [project_name]}]
+            )["RouteTables"]
+            return [rt["RouteTableId"] for rt in rts]
+        elif resource_type == "internet-gateway":
+            igws = self.ec2.describe_internet_gateways(
+                Filters=[{"Name": "tag:Project", "Values": [project_name]}]
+            )["InternetGateways"]
+            return [igw["InternetGatewayId"] for igw in igws]
+        elif resource_type == "vpc":
+            vpcs = self.ec2.describe_vpcs(
+                Filters=[{"Name": "tag:Project", "Values": [project_name]}]
+            )["Vpcs"]
+            return [vpc["VpcId"] for vpc in vpcs]
+        return []
 
-                    # Disassociate any associated subnets
-                    for association in associations:
-                        if not association["Main"]:  # Skip the main association
-                            self.ec2.disassociate_route_table(
-                                AssociationId=association["RouteTableAssociationId"]
-                            )
-                            self.logger.info(
-                                f"Disassociated route table {rtb_id} from subnet."
-                            )
+    def terminate_instances(self, instance_ids):
+        if instance_ids:
+            self.ec2.terminate_instances(InstanceIds=instance_ids)
+            self.ec2.get_waiter("instance_terminated").wait(InstanceIds=instance_ids)
+            self.logger.info(f"Instances: {instance_ids} terminated.")
 
-                    # Delete the route table after all associations are removed
-                    self.ec2.delete_route_table(RouteTableId=rtb_id)
-                    self.logger.info(f"Route table {rtb_id} successfully deleted.")
+    def delete_subnets(self, subnet_ids):
+        for subnet_id in subnet_ids:
+            self.ec2.delete_subnet(SubnetId=subnet_id)
+            self.logger.info(f"Subnet: {subnet_ids} deleted.")
 
-                except Exception as e:
-                    self.logger.error(
-                        f"Failed to delete route table {rtb_id}: {str(e)}"
-                    )
+    def delete_security_groups(self, sg_ids):
+        for sg_id in sg_ids:
+            self.ec2.delete_security_group(GroupId=sg_id)
+            self.logger.info(f"Security group: {sg_ids} deleted.")
 
-            # Delete VPC if exists
-            if vpc_id:
-                try:
-                    self.ec2.delete_vpc(VpcId=vpc_id)
-                    self.logger.info(f"VPC {vpc_id} deleted.")
-                except Exception as e:
-                    self.logger.error(f"Failed to delete VPC {vpc_id}: {str(e)}")
+    def delete_route_tables(self, rt_ids):
+        for rt_id in rt_ids:
+            self.ec2.delete_route_table(RouteTableId=rt_id)
+            self.logger.info(f"Route table: {rt_ids} deleted.")
 
-            # Delete key pair if exists
-            if key_pair_name:
-                try:
-                    self.ec2.delete_key_pair(KeyName=key_pair_name)
-                    self.logger.info(f"Key Pair {key_pair_name} deleted.")
-                except Exception as e:
-                    self.logger.error(
-                        f"Failed to delete Key Pair {key_pair_name}: {str(e)}"
-                    )
-        except Exception as e:
-            self.logger.error(f"General failure in cleanup_resources: {str(e)}")
+    def detach_delete_internet_gateways(self, igw_ids):
+        for igw_id in igw_ids:
+            self.ec2.detach_internet_gateway(InternetGatewayId=igw_id)
+            self.ec2.delete_internet_gateway(InternetGatewayId=igw_id)
+            self.logger.info(f"Internet gateway: {igw_ids} detached and deleted.")
+
+    def delete_vpcs(self, vpc_ids):
+        for vpc_id in vpc_ids:
+            self.ec2.delete_vpc(VpcId=vpc_id)
+            self.logger.info(f"VPC: {vpc_id} deleted.")

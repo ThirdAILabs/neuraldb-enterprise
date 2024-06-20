@@ -74,7 +74,6 @@ def main():
         raise ValueError(msg)
 
     if user_config["cluster_type_config"] == "aws":
-        instance_ids = vpc_id = subnet_id = sg_id = igw_id = rtb_id = None
         try:
             aws_infra = AWSInfrastructure(user_config, logger)
 
@@ -88,18 +87,12 @@ def main():
             instance_ids = aws_infra.launch_instances(sg_id, subnet_id)
 
             cluster_config = aws_infra.create_cluster_config(instance_ids)
+            # TODO(pratik): waits for ports to open, do something better here.
+            time.sleep(60)
 
         except Exception as e:
             logger.error(f"Error occurred: {e}. Initiating cleanup.")
-            aws_infra.cleanup_resources(
-                instance_ids=instance_ids,
-                vpc_id=vpc_id,
-                sg_id=sg_id,
-                igw_id=igw_id,
-                subnet_ids=[subnet_id],
-                rtb_id=rtb_id,
-                key_pair_name=user_config["ssh"]["key_name"],
-            )
+            aws_infra.cleanup_resources()
             raise
 
     elif user_config["cluster_type_config"] == "azure":
@@ -113,6 +106,8 @@ def main():
             azure_infra.create_and_configure_nsg()
             cluster_config = azure_infra.generate_config_json()
             azure_infra.mount_disk(cluster_config)
+            # TODO(pratik): waits for ports to open, do something better here.
+            time.sleep(120)
         except Exception as e:
             logger.error(f"An error occurred: {e}")
             azure_infra.cleanup_resources()

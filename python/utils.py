@@ -59,7 +59,7 @@ def validate_cluster_config(config):
 
     cluster_type = config.get("cluster_type_config")
 
-    if cluster_type == "local":
+    if cluster_type == "self-hosted":
         is_valid, message = validate_keys(config, local_required_keys)
     elif cluster_type == "aws":
         is_valid, message = validate_keys(config, aws_required_keys)

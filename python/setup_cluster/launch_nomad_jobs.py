@@ -122,6 +122,7 @@ class NomadJobDeployer:
             # Cleanup the temporary file
             os.remove(hcl_file_path)
 
+        # TODO(pratik/kartik): move this to local host in place of nomad_ip
         nomad_endpoint = f"http://{nomad_ip}:4646/"
         temp_hcl_path = replace_placeholders(hcl_template, kwargs)
         submit_to_nomad(temp_hcl_path, nomad_endpoint, kwargs["TASK_RUNNER_TOKEN"])
