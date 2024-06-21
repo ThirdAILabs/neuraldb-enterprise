@@ -3,8 +3,8 @@
 # Exactly one of 'sql_server' and 'sql_uri' must be specified
 self_hosted_sql_server=$(jq -r 'any(.nodes[]; has("sql_server"))' config.json)
 external_hosted_sql_server=$(jq -r 'has("sql_uri")' config.json)
-if { [ "$self_hosted_sql_server" == "true" ] && [ "$external_hosted_sql_server" == "true" ]; } || { [ "$self_hosted_sql_server" == "false" ] && [ "$external_hosted_sql_server" == "false" ]; }; then
-    echo "Error: Exactly one of sql_server and sql_uri must be supplied."
+if { [ "$self_hosted_sql_server" == true ] && [ "$external_hosted_sql_server" == true ]; } || { [ "$self_hosted_sql_server" == false ] && [ "$external_hosted_sql_server" == false ]; }; then
+    echo "Error: Exactly one of sql_server and sql_uri must be supplied in config.json."
     exit 1
 fi
 
@@ -24,7 +24,7 @@ else
 
     # Set up the PostgreSQL server on the Head node, and install the PostgreSQL client on the client nodes
     self_hosted_sql_server=$(jq -r 'any(.nodes[]; has("sql_server"))' config.json)
-    if [ $self_hosted_sql_server ]; then
+    if [ "$self_hosted_sql_server" = true ]; then
         bash setup_postgresql.sh
     fi
 
