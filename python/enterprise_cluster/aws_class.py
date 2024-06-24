@@ -12,6 +12,14 @@ class AWSInfrastructure:
         )
 
     def import_key_pair(self):
+        """
+        Imports an SSH public key to an Amazon EC2 instance to enable SSH logins.
+        This method assumes `self.config` contains necessary SSH details such as the public key path and key name.
+
+        Returns:
+            str: The unique identifier of the imported key pair if successful, or None if an error occurs.
+        """
+    
         try:
             with open(self.config["ssh"]["public_key_path"], "rb") as key_file:
                 public_key_material = key_file.read()
@@ -28,6 +36,12 @@ class AWSInfrastructure:
             return None
 
     def create_vpc(self):
+        """
+        Call the create_vpc method on the EC2 service client to create a new Virtual Private Cloud (VPC).
+        
+        The CIDR block for the new VPC is specified by `vpc_cidr_block` from the configuration.
+        """
+        
         response = self.ec2.create_vpc(
             CidrBlock=self.config["network"]["vpc_cidr_block"],
             TagSpecifications=[
@@ -43,6 +57,12 @@ class AWSInfrastructure:
         return response["Vpc"]["VpcId"]
 
     def create_subnet(self, vpc_id):
+        """
+        This method creates a subnet within a specified VPC in AWS using the EC2 service.
+        
+        Parameters:
+            vpc_id: str - The ID of the VPC within which the subnet will be created.
+        """
         response = self.ec2.create_subnet(
             VpcId=vpc_id,
             CidrBlock=self.config["network"]["subnet_cidr_block"],
@@ -59,6 +79,17 @@ class AWSInfrastructure:
         return response["Subnet"]["SubnetId"]
 
     def setup_internet_gateway(self, vpc_id):
+        """
+        Creates a new internet gateway and tags it with the project name from the configuration.
+        Attaches the newly created internet gateway to the VPC specified by the `vpc_id`.
+
+        Parameters:
+            vpc_id (str): The ID of the VPC to which the internet gateway will be attached.
+
+        Returns:
+            str: The ID of the newly created internet gateway.
+
+        """
         igw_response = self.ec2.create_internet_gateway(
             TagSpecifications=[
                 {
@@ -75,6 +106,20 @@ class AWSInfrastructure:
         return igw_id
 
     def create_route_table(self, vpc_id, igw_id, subnet_id):
+        """
+        Creates a new route table in the specified VPC with a tag containing the project name.
+        Creates a default route in the route table that directs all traffic (0.0.0.0/0) to the specified internet gateway.
+        Associates the created route table with the specified subnet.
+
+        Parameters:
+            vpc_id (str): The ID of the VPC in which the route table is to be created.
+            igw_id (str): The ID of the internet gateway to which the default route should be directed.
+            subnet_id (str): The ID of the subnet to which the route table will be associated.
+
+        Returns:
+            str: The ID of the newly created route table.
+
+        """
         rt_response = self.ec2.create_route_table(
             VpcId=vpc_id,
             TagSpecifications=[
@@ -95,6 +140,17 @@ class AWSInfrastructure:
         return rtb_id
 
     def create_security_group(self, vpc_id):
+        """
+        Creates a security group within the specified VPC with predefined rules and tags.
+        The security group is configured to allow ingress for HTTP, HTTPS, SSH, and Nomad protocols.
+        
+        Parameters:
+        vpc_id (str): The ID of the VPC where the security group will be created.
+
+        Returns:
+        str: The ID of the newly created security group.
+
+        """
         sg_response = self.ec2.create_security_group(
             GroupName="neuraldb-enterprise-node-sg",
             Description="allow ingress for http/s, ssh, and nomad",
@@ -113,6 +169,14 @@ class AWSInfrastructure:
         return sg_id
 
     def setup_security_group_rules(self, sg_id):
+        """
+        The function defines rules for incoming traffic to specific ports for TCP. 
+        Authorizes these ingress rules to the specified security group.
+        
+        Parameters:
+        sg_id (str): The security group ID to which the rules will be applied.
+
+        """
         rules = [
             {
                 "IpProtocol": "tcp",
@@ -150,6 +214,17 @@ class AWSInfrastructure:
         self.logger.info("Security group rules configured.")
 
     def check_ami_exists(self, name, description):
+        """
+        Check if an Amazon Machine Image (AMI) exists that match the given name and description.
+
+        Parameters:
+            name (str): The name of the AMI to search for.
+            description (str): The description of the AMI to search for.
+
+        Returns:
+            str or None: The Image ID of the found AMI if one exists, otherwise None.
+        """
+    
         images = self.ec2.describe_images(
             Filters=[
                 {"Name": "name", "Values": [name]},
@@ -162,6 +237,18 @@ class AWSInfrastructure:
         return None
 
     def wait_for_ami(self, ami_id, timeout=600):
+        """
+        Waits for an Amazon Machine Image (AMI) to become available within a specified timeout period.
+
+        Parameters:
+            ami_id (str): The unique identifier for the AMI to check.
+            timeout (int, optional): The time in seconds to wait for the AMI to become available. Defaults to 600 seconds.
+
+        Raises:
+            TimeoutError: If the AMI does not become available within the specified timeout.
+            Exception: Re-raises any exceptions that occur during the AMI state check.
+        """
+    
         start_time = time.time()
         while True:
             try:
@@ -181,6 +268,19 @@ class AWSInfrastructure:
                 raise
 
     def wait_for_instances(self, instance_ids, state="running", timeout=300):
+        """
+        Waits for specified EC2 instances to reach a desired state.
+
+        This method uses AWS EC2 waiters to poll the state of instances at regular intervals until 
+        they reach the specified state or until a timeout occurs.
+
+        Parameters:
+            instance_ids (list of str): A list of EC2 instance IDs that this method will wait on.
+            state (str): The desired state of the instances to wait for. Defaults to "running".
+            timeout (int): The maximum time in seconds to wait for the instances to reach the desired state. Defaults to 300 seconds.
+
+        """
+        
         waiter_name = f"instance_{state}"
         try:
             waiter = self.ec2.get_waiter(waiter_name)
@@ -204,6 +304,21 @@ class AWSInfrastructure:
             raise
 
     def launch_instances(self, sg_id, subnet_id):
+        """
+        Launches EC2 instances using a specified AMI and configuration settings.
+        This method handles checking if a specified AMI exists or needs to be copied from a source region.
+        After ensuring the AMI is available, it launches a specified number of EC2 instances according to the configuration,
+        setting up each instance with appropriate network settings and tags.
+
+        Parameters:
+            sg_id (str): The security group ID to associate with the instances.
+            subnet_id (str): The subnet ID where the instances will be launched.
+
+        Returns:
+            list: A list of instance IDs of the launched instances.
+
+        """
+        
         ami_id = "ami-0c7217cdde317cfec"  # Default AMI for us-east-1
         target_region = self.config["network"]["region"]
         ami_name = "ThirdAI-NeuralDB Copied AMI"
@@ -265,6 +380,22 @@ class AWSInfrastructure:
         return instances
 
     def create_cluster_config(self, instance_ids):
+        """
+        Create a configuration dictionary for a cluster based on a list of EC2 instance IDs.
+        This function initializes a cluster configuration with predefined settings and updates
+        it with the IP addresses of the given EC2 instances. The first instance is treated as the
+        head node, and the remaining instances are treated as client nodes.
+
+        Parameters:
+            instance_ids (list): A list of EC2 instance IDs where the first ID is for the head node
+                            and the rest are client nodes.
+
+        Returns:
+            dict: A dictionary containing the cluster configuration with nodes set up with
+                web ingress settings, SQL server settings, shared file system settings,
+                and the respective IP addresses for each node.
+        """
+    
         head_node_id = instance_ids[0]
         client_node_ids = instance_ids[1:]
 
@@ -314,6 +445,12 @@ class AWSInfrastructure:
         return config_data
 
     def cleanup_resources(self):
+        """
+        Cleans up all AWS resources associated with a specific project.
+        This function retrieves all resource IDs associated with a project (like instances, subnets, security groups, etc.)
+        and then proceeds to terminate and delete those resources.
+        """
+    
         project_name = self.config["project"]["name"]
 
         instance_ids = self.get_resource_ids("instance", project_name)
@@ -331,7 +468,17 @@ class AWSInfrastructure:
         self.delete_vpcs(vpc_ids)
 
     def get_resource_ids(self, resource_type, project_name):
+        """
+        Retrieves the IDs of AWS resources filtered by project and type.
 
+        Parameters:
+            resource_type (str): The type of the AWS resource (e.g., 'instance', 'subnet').
+            project_name (str): The name of the project to filter resources by.
+
+        Returns:
+            list: A list of resource IDs of the specified type and project.
+        """
+        
         if resource_type == "instance":
             reservations = self.ec2.describe_instances(
                 Filters=[{"Name": "tag:Project", "Values": [project_name]}]
@@ -367,33 +514,55 @@ class AWSInfrastructure:
         return []
 
     def terminate_instances(self, instance_ids):
+        """
+        Terminate specified AWS EC2 instances and waits until termination is confirmed.
+
+        Parameters:
+            instance_ids (list): List of instance IDs to be terminated.
+        """
+    
         if instance_ids:
             self.ec2.terminate_instances(InstanceIds=instance_ids)
             self.ec2.get_waiter("instance_terminated").wait(InstanceIds=instance_ids)
             self.logger.info(f"Instances: {instance_ids} terminated.")
 
     def delete_subnets(self, subnet_ids):
+        """
+        Deletes a list of subnets
+        """
         for subnet_id in subnet_ids:
             self.ec2.delete_subnet(SubnetId=subnet_id)
             self.logger.info(f"Subnet: {subnet_ids} deleted.")
 
     def delete_security_groups(self, sg_ids):
+        """
+        Deletes a list of security groups
+        """
         for sg_id in sg_ids:
             self.ec2.delete_security_group(GroupId=sg_id)
             self.logger.info(f"Security group: {sg_ids} deleted.")
 
     def delete_route_tables(self, rt_ids):
+        """
+        Deletes a list of route tables
+        """
         for rt_id in rt_ids:
             self.ec2.delete_route_table(RouteTableId=rt_id)
             self.logger.info(f"Route table: {rt_ids} deleted.")
 
     def detach_delete_internet_gateways(self, igw_ids):
+        """
+        Detaches and deletes a list of internet gateways 
+        """
         for igw_id in igw_ids:
             self.ec2.detach_internet_gateway(InternetGatewayId=igw_id)
             self.ec2.delete_internet_gateway(InternetGatewayId=igw_id)
             self.logger.info(f"Internet gateway: {igw_ids} detached and deleted.")
 
     def delete_vpcs(self, vpc_ids):
+        """
+        Deletes a list of VPCs 
+        """
         for vpc_id in vpc_ids:
             self.ec2.delete_vpc(VpcId=vpc_id)
             self.logger.info(f"VPC: {vpc_id} deleted.")
