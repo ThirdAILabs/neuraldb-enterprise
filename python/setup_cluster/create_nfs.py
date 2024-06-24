@@ -34,6 +34,12 @@ class NFSSetupManager:
         )
 
     def setup_shared_file_system(self):
+        """
+        Setup the shared file system on the NFS server.
+
+        This method constructs a series of commands to update packages, create user and group for NFS,
+        and set permissions on the shared directory.
+        """
         commands = [
             "sudo apt -y update",
             "sudo groupadd -g 4646 nomad_nfs || true",
@@ -61,6 +67,15 @@ class NFSSetupManager:
         )
 
     def setup_nfs_server(self):
+        """
+        Sets up an NFS server on the specified node within the cluster configuration.
+        
+        This function checks if the NFS server needs to be created
+        It then installs necessary packages, sets appropriate access controls, configures NFS exports for specified client IPs,
+        and ensures the NFS server is active and enabled on the server node
+
+        """
+
         if (
             "create_nfs_server" in self.config["nodes"][0]["shared_file_system"]
             and self.config["nodes"][0]["shared_file_system"]["create_nfs_server"]
@@ -113,6 +128,13 @@ class NFSSetupManager:
             )
 
     def mount_nfs_clients(self):
+        """
+        Mounts the NFS directory on all specified NFS client machines.
+
+        This function updates the package lists, installs NFS common packages, checks for the existence of the shared directory,
+        and mounts it. It also ensures the mount is persistent across reboots by adding it to fstab
+
+        """
         commands = [
             "sudo apt -y update",
             "sudo apt-get install -y nfs-common",

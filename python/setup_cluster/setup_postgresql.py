@@ -39,6 +39,18 @@ class SQLServerDeployer:
         )
 
     def deploy_sql_server(self):
+        """
+        Deploys a SQL server (PostgreSQL) using Docker on a specified server.
+
+        This method constructs and executes a series of shell commands to:
+        -   Clean the SQL server's database directory.
+        -   Set up necessary directories and initialization scripts for PostgreSQL.
+        -   Configure client access via IP filtering.
+        -   Pull the PostgreSQL Docker image.
+        -   Stop and remove any existing PostgreSQL Docker containers.
+        -   Run a new PostgreSQL Docker container with initialized settings.
+        """
+    
         ip_list = " ".join(self.sql_client_private_ips)
         # Also added command to clean postgreql database
         commands = f"""

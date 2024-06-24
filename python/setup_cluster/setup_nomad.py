@@ -33,6 +33,10 @@ class NomadDeployer:
         )
 
     def get_install_commands(self):
+        """
+        Retrieves a list of shell commands for installing necessary software components.
+        """
+    
         return [
             "sudo apt update",
             "command -v wget >/dev/null || sudo apt install -y wget",
@@ -46,7 +50,11 @@ class NomadDeployer:
         ]
 
     def deploy(self):
-
+        """
+        Executes installation commands on a set of nodes using SSH.
+        For each node, it determines if a proxy should be used for the connection and then executes the install commands remotely using an SSH client handler.
+        """
+        
         install_commands = self.get_install_commands()
 
         for ip in self.node_private_ips:
@@ -59,6 +67,14 @@ class NomadDeployer:
             )
 
     def setup_nomad_cluster(self):
+        """
+        Set up a Nomad cluster by configuring and launching Nomad server sessions.
+
+        This function configures a Nomad cluster based on the IP settings and
+        starts the Nomad server within a new or existing tmux session using predefined
+        scripts
+        """
+    
         self.logger.info("Setting up Nomad Cluster...")
 
         if self.web_ingress_private_ip == self.nomad_server_private_ip:
@@ -94,6 +110,18 @@ class NomadDeployer:
         time.sleep(20)
 
     def bootstrap_acl_system(self):
+        """
+        Initializes and configures the ACL (Access Control List) system for the Nomad server.
+        
+        - Creates necessary directories for Nomad data.
+        - Bootstraps the Nomad ACL system if not already done.
+        - Extracts and logs the management token.
+        - Applies an ACL policy from a specified file.
+        - Creates an ACL token for a specific task runner.
+        - Sets up environment variables with the new token.
+
+        """
+    
         self.logger.info("Bootstrapping ACL system")
 
         nomad_data_dir = "/opt/neuraldb_enterprise/nomad_data"
@@ -121,6 +149,16 @@ nomad var put -namespace default -token "$management_token" -force nomad/jobs ta
         )
 
     def start_nomad_clients(self):
+        """
+        Starts Nomad client agents on specified nodes except the node acting as the Nomad server.
+
+        This method iterates through a list of client IPs derived from the node configuration,
+        excluding the IP of the Nomad server. It then determines the appropriate pool and class
+        for each node based on its configuration and executes commands over SSH to start the
+        Nomad client agents in a new detached tmux session.
+
+        """
+    
         self.logger.info("Starting Nomad Clients")
 
         # List of client IPs excluding the server's IP

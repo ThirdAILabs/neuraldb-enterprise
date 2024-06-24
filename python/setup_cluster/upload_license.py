@@ -29,6 +29,12 @@ class UploadLicense:
         )["shared_file_system"]["shared_dir"]
 
     def transfer_files(self):
+        """
+        Transfers license files to the shared directory on the head node
+
+        License file paths are obtained from the configuration and transferred using SSH.
+        If an airgapped license path is available, it will also be transferred.
+        """
         license_path = self.config["security"]["license_path"]
         airgapped_license_path = self.config["security"].get(
             "airgapped_license_path", None
@@ -55,6 +61,11 @@ class UploadLicense:
             )
 
     def set_permissions(self):
+        """
+        Sets the permissions for the uploaded license file to ensure it is accessible
+        within the node's shared directory.
+        """
+
         # TODO(pratik): See whether these are necessary
         command = (
             f"sudo chmod g+rw {self.shared_dir}/license/ndb_enterprise_license.json"

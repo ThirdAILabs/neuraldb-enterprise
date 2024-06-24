@@ -3,7 +3,6 @@ import json
 from setup_cluster.ssh_client_handler import SSHClientHandler
 import os
 
-
 class NodeStatusChecker:
     def __init__(self, config, logger):
         self.config = config
@@ -32,6 +31,13 @@ class NodeStatusChecker:
         )
 
     def check_status_on_nodes(self):
+        """
+        This method iterates over all nodes, constructs a command to log their status,
+        and uses an SSH client to execute these commands
+
+        Returns:
+        list: A list containing the results of the status check commands executed on each node.
+        """
         results = []
         for node in self.nodes:
             ip = node["private_ip"]
@@ -44,7 +50,10 @@ class NodeStatusChecker:
         return results
 
     def copy_status_file(self):
-        # TODO(pratik): Write a test matching each of the ip written
+        """
+        This method uses SSH to copy the node status file from a shared remote directory
+        to a local directory
+        """
         local_path = "./node_status"
         self.ssh_client_handler.copy_file(
             local_path,
@@ -55,6 +64,12 @@ class NodeStatusChecker:
         )
 
     def clean_up(self):
+        """
+        Cleans up by removing the status file on the server.
+
+        Returns:
+            bool: True if the cleanup was successful, False if there was an error.
+        """
         try:
             self.ssh_client_handler.execute_commands(
                 [f"sudo rm -f {self.status_file_loc}"], self.web_ingress_public_ip
