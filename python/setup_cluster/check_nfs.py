@@ -46,7 +46,7 @@ class NodeStatusChecker:
     def verify_status_on_nodes(self):
         results = []
         check_command_template = "grep -q '{ip} | success' {file_location} && echo '{ip} | success' || echo '{ip} | failed'"
-
+        status = True
         for node in self.nodes:
             ip = node["private_ip"]
             check_command = check_command_template.format(
@@ -60,9 +60,10 @@ class NodeStatusChecker:
             if "success" in result:
                 self.logger.info(f"NFS verification success for IP {ip}.")
             else:
-                self.logger.warning(f"NFS verification failed for IP {ip}.")
+                self.logger.error(f"NFS verification failed for IP {ip}.")
+                status = False
 
-        return results
+        return results, status
 
     def clean_up(self):
         try:

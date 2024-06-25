@@ -152,7 +152,9 @@ def main():
     checker = NodeStatusChecker(user_cluster_config, logger)
     try:
         checker.write_status_on_nfs()
-        checker.verify_status_on_nodes()
+        result_logs, status = checker.verify_status_on_nodes()
+        if not status:
+            raise ValueError(f"NFS setup check failed. {result_logs}")
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
         raise
