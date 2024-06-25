@@ -62,9 +62,9 @@ class NodeStatusChecker:
             )
             results.append(result)
             if "success" in result:
-                self.logger.info(f"Verification success for IP {ip}.")
+                self.logger.info(f"NFS verification success for IP {ip}.")
             else:
-                self.logger.warning(f"Verification failed for IP {ip}.")
+                self.logger.warning(f"NFS verification failed for IP {ip}.")
 
         return results
 
