@@ -141,8 +141,8 @@ def main():
 
     checker = NodeStatusChecker(user_cluster_config, logger)
     try:
-        checker.check_status_on_nodes()
-        checker.copy_status_file()
+        checker.write_status_on_nfs()
+        checker.verify_status_on_nodes()
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
         raise

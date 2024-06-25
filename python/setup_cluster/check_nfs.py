@@ -31,7 +31,7 @@ class NodeStatusChecker:
             logger=logger,
         )
 
-    def check_status_on_nodes(self):
+    def write_status_on_nfs(self):
         results = []
         for node in self.nodes:
             ip = node["private_ip"]
@@ -43,16 +43,30 @@ class NodeStatusChecker:
             results.append(result)
         return results
 
-    def copy_status_file(self):
-        # TODO(pratik): Write a test matching each of the ip written
-        local_path = "./node_status"
-        self.ssh_client_handler.copy_file(
-            local_path,
-            self.status_file_loc,
-            self.web_ingress_public_ip,
-            self.web_ingress_ssh_username,
-            "get",
-        )
+    def verify_status_on_nodes(self):
+        results = []
+        check_command_template = "grep -q '{ip} | success' {file_location} && echo '{ip} | success' || echo '{ip} | failed'"
+
+        for node in self.nodes:
+            ip = node["private_ip"]
+            check_command = check_command_template.format(
+                ip=ip, file_location=self.status_file_loc
+            )
+
+            use_jump = ip != self.web_ingress_private_ip
+            if ip == self.web_ingress_private_ip:
+                ip = self.web_ingress_public_ip
+
+            result = self.ssh_client_handler.execute_commands(
+                [check_command], ip, use_jump
+            )
+            results.append(result)
+            if "success" in result:
+                self.logger.info(f"Verification success for IP {ip}.")
+            else:
+                self.logger.warning(f"Verification failed for IP {ip}.")
+
+        return results
 
     def clean_up(self):
         try:
