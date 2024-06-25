@@ -12,7 +12,6 @@ def validate_keys(config, required_keys):
 def validate_cluster_config(config):
     local_required_keys = {
         "cluster_type_config": {},
-        "project": {"name": {}},
         "nodes": [],
         "ssh_username": {},
         "security": {

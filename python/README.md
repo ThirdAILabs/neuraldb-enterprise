@@ -1,6 +1,6 @@
 # NeuralDB Cluster Setup Tool
 
-The scripts here automate the setup of NeuralDB clusters across various environments including AWS, Azure, and self-hosted configurations. It manages everything from infrastructure deployment to application setup.
+The scripts provided here facilitate the configuration of NeuralDB clusters across different environments, such as AWS, Azure, and self-hosted setups. They cover all aspects, from deploying infrastructure to setting up the application. If you already have AWS machines running and prefer to manage the deployment yourself, you should use the self-hosted yaml file. Otherwise, select the AWS/Azure yaml files for a fully managed setup.
 
 ## Table of Contents
 

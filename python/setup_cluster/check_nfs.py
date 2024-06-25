@@ -30,14 +30,14 @@ class NodeStatusChecker:
             logger=logger,
         )
 
-    def check_status_on_nodes(self):
+    def write_status_on_nfs(self):
         """
-        This method iterates over all nodes, constructs a command to log their status,
-        and uses an SSH client to execute these commands
+        Writes the status of each node to a status file on a Network File System (NFS).
 
         Returns:
-        list: A list containing the results of the status check commands executed on each node.
+            list: A list of results from executing the SSH commands on each node.
         """
+        
         results = []
         for node in self.nodes:
             ip = node["private_ip"]
@@ -49,19 +49,35 @@ class NodeStatusChecker:
             results.append(result)
         return results
 
-    def copy_status_file(self):
+    def verify_status_on_nodes(self):
         """
-        This method uses SSH to copy the node status file from a shared remote directory
-        to a local directory
+        Verify the NFS status on each node.
+
+        Returns:
+            tuple: A tuple containing a list of results from each node and a boolean indicating the 
+                overall status (True if all nodes are successful, False otherwise).
         """
-        local_path = "./node_status"
-        self.ssh_client_handler.copy_file(
-            local_path,
-            self.status_file_loc,
-            self.web_ingress_public_ip,
-            self.web_ingress_ssh_username,
-            "get",
-        )
+    
+        results = []
+        check_command_template = "grep -q '{ip} | success' {file_location} && echo '{ip} | success' || echo '{ip} | failed'"
+        status = True
+        for node in self.nodes:
+            ip = node["private_ip"]
+            check_command = check_command_template.format(
+                ip=ip, file_location=self.status_file_loc
+            )
+
+            result = self.ssh_client_handler.execute_commands(
+                [check_command], self.web_ingress_public_ip, False
+            )
+            results.append(result)
+            if "success" in result:
+                self.logger.info(f"NFS verification success for IP {ip}.")
+            else:
+                self.logger.error(f"NFS verification failed for IP {ip}.")
+                status = False
+
+        return results, status
 
     def clean_up(self):
         """

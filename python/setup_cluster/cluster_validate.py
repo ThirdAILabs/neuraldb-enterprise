@@ -26,9 +26,10 @@ class ClusterValidator:
         if not has_ip:
             error_message = "Validation failed: No nodes have a public IP."
             self.logger.error(error_message)
+            return False
         else:
             self.logger.info("Validation successful: All nodes have a public IP.")
-        return has_ip
+            return True
 
     def check_ssh_and_sudo_access(self, node_ip, use_jump=True):
         """
@@ -51,6 +52,7 @@ class ClusterValidator:
                 f"Passwordless SSH or sudo access not configured properly on {node_ip}."
             )
             self.logger.error(error_message)
+            return False
         if "Sudo check passed" in result:
             self.logger.info(f"SSH and sudo access confirmed for {node_ip}.")
             return True
@@ -59,6 +61,7 @@ class ClusterValidator:
                 f"Passwordless SSH or sudo access not configured properly on {node_ip}."
             )
             self.logger.error(error_message)
+            return False
 
     def check_internet_access(self, node_ip, use_jump=True):
         """
@@ -78,12 +81,14 @@ class ClusterValidator:
         if not result:
             error_message = f"No internet access on {node_ip}."
             self.logger.error(error_message)
+            return False
         if "0% packet loss" in result:
             self.logger.info(f"Internet access verified for {node_ip}.")
             return True
         else:
             error_message = f"No internet access on {node_ip}."
             self.logger.error(error_message)
+            return False
 
     def check_system_resources(self, node_ip, use_jump=True):
         """
@@ -104,6 +109,7 @@ class ClusterValidator:
         if not result:
             error_message = f"Failed to retrieve system resources for {node_ip}."
             self.logger.warning(error_message)
+            return False
         mem_total = int(result.split()[1]) / 1024**2  # Convert kB to GB
         cpu_count = int(result.split()[-1])
         if mem_total >= 8 and cpu_count >= 1:
@@ -112,6 +118,7 @@ class ClusterValidator:
         else:
             error_message = f"Insufficient system resources on {node_ip}. Nodes should have at least 8GB of RAM and 1 CPU."
             self.logger.error(error_message)
+            return False
 
     def check_ubuntu_version(self, node_ip, use_jump=True):
         """
@@ -130,12 +137,14 @@ class ClusterValidator:
         if not result:
             error_message = f"Failed to retrieve Ubuntu version for {node_ip}."
             self.logger.warning(error_message)
+            return False
         if "Ubuntu 22.04" in result:
             self.logger.info(f"Ubuntu version confirmed on {node_ip}.")
             return True
         else:
             error_message = f"Incorrect Ubuntu version on {node_ip}. Need Ubuntu 22.04."
             self.logger.error(error_message)
+            return False
 
     def check_port_exposure(self, node_ip, ports, use_jump=True):
         """
@@ -147,7 +156,7 @@ class ClusterValidator:
             ports (list): List of ports to check.
             use_jump (bool): Specifies whether to use a jump host for the connection.
         """
-
+        passed = True
         for port in ports:
             commands = [f"nc -zv {node_ip} {port}"]
             output = self.ssh_handler.execute_commands(
@@ -156,7 +165,8 @@ class ClusterValidator:
             if "succeeded" in output:
                 error_message = f"Port {port} is in use on {node_ip}."
                 self.logger.error(error_message)
-        return True
+                passed = False
+        return passed
 
     def validate_cluster(self):
         """
@@ -170,7 +180,7 @@ class ClusterValidator:
             return False
 
         results = {}
-        ports_to_check = [22, 80, 443, 4646, 5432]
+        ports_to_check = [22, 80, 443, 2049, 4646, 5432]
         for node in self.nodes:
             node_ip = node["private_ip"]
             if "web_ingress" in node:
