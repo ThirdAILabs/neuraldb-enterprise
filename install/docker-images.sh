@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the image details
-IMAGES=("model-bazaar"  "search-ui-job" "neuraldb-deploy" "neuraldb-train" "neuraldb-rlhf-update")
+IMAGES=("model_bazaar"  "neuraldb_train_job" "neuraldb_update_job" "neuraldb_deployment_job" "neuraldb_frontend" "neuraldb_shard_allocation_job" "neuraldb_shard_train_job" "neuraldb_test_job")
 DOCKERNAME="neuraldb-enterprise-pull"
 DOCKERPASSWORD="yVGj3GVOJBJM4Lm+HOkvSfIZV435fHeHYVPgjyw2jt+ACRDwaC/l"
 SERVER_ADDRESS="neuraldbenterprise.azurecr.io"
@@ -45,11 +45,11 @@ sudo docker login -u "$DOCKERNAME" -p "$DOCKERPASSWORD" "$SERVER_ADDRESS"
 
 # Loop through the array and pull each Docker image
 for IMAGE in ${IMAGES[@]}; do
-  echo "Pulling image: thirdaistaging.azurecr.io/\$IMAGE:latest"
-  sudo docker pull "thirdaistaging.azurecr.io/\$IMAGE:latest"
+  echo "Pulling image: neuraldbenterprise.azurecr.io/\$IMAGE:latest"
+  sudo docker pull "neuraldbenterprise.azurecr.io/\$IMAGE:latest"
 
-  echo "Tagging image: thirdaistaging.azurecr.io/\$IMAGE:latest -> $PRIVATE_NFS_SERVER_IP:5000/\$IMAGE"
-  sudo docker tag "thirdaistaging.azurecr.io/\$IMAGE:latest" "$PRIVATE_NFS_SERVER_IP:5000/\$IMAGE"
+  echo "Tagging image: neuraldbenterprise.azurecr.io/\$IMAGE:latest -> $PRIVATE_NFS_SERVER_IP:5000/\$IMAGE"
+  sudo docker tag "neuraldbenterprise.azurecr.io/\$IMAGE:latest" "$PRIVATE_NFS_SERVER_IP:5000/\$IMAGE"
 
   echo "Pushing image: $PRIVATE_NFS_SERVER_IP:5000/\$IMAGE"
   sudo docker push "$PRIVATE_NFS_SERVER_IP:5000/\$IMAGE"
