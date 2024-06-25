@@ -4,11 +4,6 @@
 # Cluster type configuration
 cluster_type_config: self-hosted
 
-# Project settings
-project:
-  # Unique name for the project
-  name: thirdai-platform 
-
 # Configuration details for the nodes within the cluster.
 nodes:
   - private_ip: <web_ingress__private_ip>  # Internal IP address of the first node.
