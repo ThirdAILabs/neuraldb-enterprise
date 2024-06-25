@@ -1,5 +1,5 @@
 # Cluster Configuration for deploying NeuralDB Enterprise in a self-hosted environment.
-# This specifies that the cluster will be managed and hosted internally rather than on a cloud platform.
+# This specifies is for deploying NeuralDB Enterprise on an existing cluster.
 
 # Cluster type configuration
 cluster_type_config: self-hosted
@@ -15,7 +15,7 @@ nodes:
     web_ingress:
       public_ip: <web_ingress_public_ip>  # Public IP address for accessing the web interface.
       run_jobs: true  # This node can handle job executions.
-      ssh_username: sdp  # SSH username for secure login to this node.
+      ssh_username: admin  # SSH username for secure login to this node.
     sql_server:
       database_dir: /opt/neuraldb_enterprise/database  # Directory where the database files are stored.
       database_password: password  # Password for database access.

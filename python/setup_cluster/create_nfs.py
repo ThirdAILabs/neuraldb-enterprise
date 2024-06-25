@@ -47,6 +47,9 @@ class NFSSetupManager:
             f"sudo chown -R :4646 {self.shared_dir}",
             f"sudo chmod -R 774 {self.shared_dir}",
             f"sudo chmod -R g+s {self.shared_dir}",
+            "sudo apt install -y nfs-kernel-server",
+            "sudo apt install -y acl",
+            f"sudo setfacl -d -R -m u::rwx,g::rwx,o::r {self.shared_dir}",
         ]
 
         use_proxy = self.web_ingress_private_ip != self.shared_file_system_private_ip
@@ -66,22 +69,8 @@ class NFSSetupManager:
             and self.config["nodes"][0]["shared_file_system"]["create_nfs_server"]
         ):
 
-            commands = [
-                "sudo apt install -y nfs-kernel-server",
-                "sudo apt install -y acl",
-                f"sudo setfacl -d -R -m u::rwx,g::rwx,o::r {self.shared_dir}",
-            ]
             use_proxy = (
                 self.web_ingress_private_ip != self.shared_file_system_private_ip
-            )
-            self.ssh_client_handler.execute_commands(
-                commands,
-                (
-                    self.shared_file_system_private_ip
-                    if use_proxy
-                    else self.web_ingress_public_ip
-                ),
-                use_proxy,
             )
 
             for ip in self.nfs_client_private_ips:
