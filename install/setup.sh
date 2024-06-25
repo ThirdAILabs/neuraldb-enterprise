@@ -1,31 +1,36 @@
 #!/bin/bash
 
-# This just loads the resource group variables.
-source variables.sh
+# Exactly one of 'sql_server' and 'sql_uri' must be specified
+self_hosted_sql_server=$(jq -r 'any(.nodes[]; has("sql_server"))' config.json)
+external_hosted_sql_server=$(jq -r 'has("sql_uri")' config.json)
+if { [ "$self_hosted_sql_server" == true ] && [ "$external_hosted_sql_server" == true ]; } || { [ "$self_hosted_sql_server" == false ] && [ "$external_hosted_sql_server" == false ]; }; then
+    echo "Error: Exactly one of sql_server and sql_uri must be supplied in config.json."
+    exit 1
+fi
 
 # Set up the NFS server on the Head node, and mount the NFS server on each of the clients
-source setup_nfs.sh
+bash setup_nfs.sh
 
 # Check if the shared dir collaboration is working properly or not
-( source shared_disk_check.sh )
+( bash shared_disk_check.sh )
 if [ $? -ne 0 ]; then
-    echo "Directory is not being shared among nodes. Ensure that all nodes have access to the shared directory before rerunning this script"
+    echo "Error: Directory is not being shared among nodes. Ensure that all nodes have access to the shared directory before rerunning this script"
 else
     # Upload the Rag on Rails license to the Nomad cluster
-    source upload_license.sh
+    bash upload_license.sh
 
-    # Once we have written the IPs of the VMs to the json files, there are two things left to be done
-    # 1. Setup Nomad on each of the nodes
-    # 2. Setup server and clients
-    source run_nomad_scripts.sh server
-    source run_nomad_scripts.sh client
+    # Launch the Nomad Server and Clients
+    bash setup_nomad.sh
 
     # Set up the PostgreSQL server on the Head node, and install the PostgreSQL client on the client nodes
-    source setup_postgresql.sh
+    self_hosted_sql_server=$(jq -r 'any(.nodes[]; has("sql_server"))' config.json)
+    if [ "$self_hosted_sql_server" = true ]; then
+        bash setup_postgresql.sh
+    fi
 
     #Update the images to the local docker registry.
     source docker-images.sh
 
     # Now we can launch the Model Bazaar jobs onto our nomad cluster 
-    source launch_nomad_jobs.sh
+    bash launch_nomad_jobs.sh
 fi

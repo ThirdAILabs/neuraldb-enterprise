@@ -28,8 +28,19 @@ job "modelbazaar" {
 
       driver = "docker"
 
+      template {
+        destination = "${NOMAD_SECRETS_DIR}/env.vars"
+        env         = true
+        change_mode = "restart"
+        data        = <<EOF
+{{- with nomadVar "nomad/jobs" -}}
+TASK_RUNNER_TOKEN = {{ .task_runner_token }}
+{{- end -}}
+EOF
+      }
+
       env {
-        DATABASE_URI = "postgresql://modelbazaaruser:{{ DB_PASSWORD }}@{{ PRIVATE_SERVER_IP }}:5432/modelbazaar"
+        DATABASE_URI = "{{ SQL_URI }}"
         PUBLIC_MODEL_BAZAAR_ENDPOINT = "http://{{ PUBLIC_SERVER_IP }}/"
         PRIVATE_MODEL_BAZAAR_ENDPOINT = "http://{{ PRIVATE_SERVER_IP }}/"
         LICENSE_PATH = "/model_bazaar/license/ndb_enterprise_license.json"
@@ -42,6 +53,8 @@ job "modelbazaar" {
         AUTOSCALING_ENABLED = "{{ AUTOSCALING_ENABLED }}"
         AUTOSCALER_MAX_COUNT = "{{ AUTOSCALER_MAX_COUNT }}"
         GENAI_KEY = "{{ GENAI_KEY }}"
+
+        TASK_RUNNER_TOKEN = "${TASK_RUNNER_TOKEN}"
       }
 
       config {
@@ -55,7 +68,7 @@ job "modelbazaar" {
 
       resources {
         cpu    = 1000
-        memory = 4000
+        memory = 1000
 
       }
     }

@@ -2,9 +2,10 @@
 
 # Submit Nomad Job Script
 
-nomad_ip="$1"
+ssh_command="$1"
 hcl_filename="$2"
-shift 2 # Shift the first two arguments
+acl_token="$3"
+shift 3
 additional_args=("$@")
 
 # Function to determine OS type
@@ -30,12 +31,8 @@ sed_in_place() {
     if [ "$os_type" = "macOS" ]; then
         # macOS requires an empty string as an argument to -i
         sed_cmd="sed -i ''"
-    elif [ "$os_type" = "Linux" ]; then
-        # Linux does not require an empty string
-        sed_cmd="sed -i"
     else
-        echo "Unsupported OS"
-        exit 1
+        sed_cmd="sed -i"
     fi
 
     # Run the sed command
@@ -62,36 +59,39 @@ replace_placeholders() {
 
 # Function to submit job to Nomad
 submit_nomad_job() {
-    local filepath=$1
-    local nomad_endpoint=$2
+    local ssh_command=$1
+    local filepath=$2
+    local acl_token=$3
     local temp_hcl_file headers json_payload_url submit_url json_payload response
 
-    headers="Content-Type: application/json"
-    json_payload_url="${nomad_endpoint}v1/jobs/parse"
-    submit_url="${nomad_endpoint}v1/jobs"
-
     # Replace placeholders
     temp_hcl_file=$(replace_placeholders "$filepath")
 
-    # Replace placeholders
-    temp_hcl_file=$(replace_placeholders "$filepath")
     hcl_content=$(<"$temp_hcl_file")
-    echo $hcl_content
 
-    # Construct JSON payload
-    json_payload=$(jq -n --arg hcl "$hcl_content" '{JobHCL: $hcl, Canonicalize: true}')
+    # Construct HCL payload
+    hcl_payload=$(jq -n --arg hcl "$hcl_content" '{JobHCL: $hcl, Canonicalize: true}')
 
-    # Convert HCL to JSON using the Nomad API
-    json_payload=$(curl -s -X POST -H "$headers" -d "$json_payload" "$json_payload_url")
-    echo "$json_payload"
+    $ssh_command <<EOF
+        content_header="Content-Type: application/json"
+        token_header="X-Nomad-Token: $acl_token"
+        hcl_to_json_url="http://localhost:4646/v1/jobs/parse"
+        submit_job_url="http://localhost:4646/v1/jobs"
 
-    # Submit JSON to Nomad
-    response=$(curl -s -X POST -H "$headers" -d "{\"Job\":$json_payload}" "$submit_url")
-    echo "$response"
+        hcl_payload='$hcl_payload'
+
+        # Convert HCL to JSON using the Nomad API
+        json_payload=\$(curl -s -X POST -H "\$content_header" -H "\$token_header" -d "\$hcl_payload" "\$hcl_to_json_url")
+        echo \$json_payload
+
+        # Submit JSON to Nomad
+        response=\$(curl -s -X POST -H "\$content_header" -H "\$token_header" -d "{\"Job\":\$json_payload}" "\$submit_job_url")
+        echo \$response
+EOF
 
     # Cleanup temporary file
     rm "$temp_hcl_file"
 }
 
 # Main execution
-submit_nomad_job "$hcl_filename" "http://${nomad_ip}:4646/"
+submit_nomad_job "$ssh_command" "$hcl_filename" "$acl_token"
