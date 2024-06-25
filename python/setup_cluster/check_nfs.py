@@ -53,12 +53,8 @@ class NodeStatusChecker:
                 ip=ip, file_location=self.status_file_loc
             )
 
-            use_jump = ip != self.web_ingress_private_ip
-            if ip == self.web_ingress_private_ip:
-                ip = self.web_ingress_public_ip
-
             result = self.ssh_client_handler.execute_commands(
-                [check_command], ip, use_jump
+                [check_command], self.web_ingress_public_ip, False
             )
             results.append(result)
             if "success" in result:

@@ -122,6 +122,16 @@ def main():
 
     user_cluster_config = merge_dictionaries(user_config, cluster_config)
 
+    # dumping the final cluster for info
+    yaml_str = yaml.dump(user_cluster_config, default_flow_style=False, sort_keys=False)
+
+    current_time = datetime.datetime.now()
+
+    formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"neuraldb_cluster_config_{user_config['cluster_type_config']}_{formatted_time}.yaml"
+    with open(filename, "w") as f:
+        f.write(yaml_str)
+
     try:
         validator = ClusterValidator(user_cluster_config, logger)
         result = validator.validate_cluster()
@@ -180,16 +190,6 @@ def main():
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
         raise
-
-    # dumping the final cluster for info
-    yaml_str = yaml.dump(user_cluster_config, default_flow_style=False, sort_keys=False)
-
-    current_time = datetime.datetime.now()
-
-    formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"neuraldb_cluster_config_{user_config['cluster_type_config']}_{formatted_time}.yaml"
-    with open(filename, "w") as f:
-        f.write(yaml_str)
 
     for node in user_cluster_config["nodes"]:
         if "web_ingress" in node and "public_ip" in node["web_ingress"]:
