@@ -1,0 +1,57 @@
+# Cluster configuration for deploying NeuralDB Enterprise on Microsoft Azure.
+# This section specifies the use of Azure as the cloud provider for the cluster.
+cluster_type_config: azure
+
+# SSH Configuration
+ssh:
+  # Path to the public SSH key file
+  public_key_path: /path/to/.ssh/id_rsa.pub
+
+# Azure-specific resource configuration for setting up the infrastructure.
+azure_resources:
+  # Azure region where the resources will be deployed.
+  location: centralus  
+  # Name of the resource group for organizing related resources.
+  resource_group_name: thirdai-platform-group
+  # Name of the virtual network to connect the Azure resources.
+  vnet_name: thirdai-platform-vnet
+  # Subnet within the virtual network.
+  subnet_name: thirdai-platform-subnet  
+  # Name for the IP configuration of the head node.
+  head_node_ipname: thirdai-platform-ip  
+
+# VM Setup
+vm_setup:
+  # Azure VM type (size) to be used for the cluster nodes.
+  type: Standard_B4ms 
+  # Default username for the VMs 
+  ssh_username: ubuntu
+  # Number of VMs to deploy initially
+  vm_count: 2
+
+# Security settings
+security:
+  # Path to the license file for NeuralDB Enterprise
+  license_path: /path/to/ndb_enterprise_license.json
+  # JWT secret used for token generation, should be a secure random string
+  jwt_secret: 1234  # This should be changed to a secure, random string
+  # Admin user configuration
+  admin:
+    # Email address of the admin user
+    email: admin@mail.com
+    # Username for admin login
+    username: admin
+    # Password for admin login
+    password: password
+
+# API Configuration
+api:
+  # Key for using OpenAI ChatGPT for summarizing the answers
+  genai_key: open-ai-api-key
+
+# Autoscaling settings
+autoscaling:
+  # Flag to enable or disable autoscaling
+  enabled: false
+  # Maximum number of VMs that can be automatically provisioned
+  max_count: 1

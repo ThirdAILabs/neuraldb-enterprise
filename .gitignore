@@ -1,3 +1,6 @@
 ndb_enterprise_license.json
 install-on-azure/config.json
 install-on-aws/config.json
+*.log
+__pycache__/
+.vscode
