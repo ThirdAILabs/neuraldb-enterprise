@@ -1,5 +1,4 @@
 import yaml
-import argparse
 import datetime
 import time
 
@@ -16,18 +15,7 @@ from setup_cluster.setup_postgresql import SQLServerDeployer
 from setup_cluster.launch_nomad_jobs import NomadJobDeployer
 from setup_cluster.cluster_validate import ClusterValidator
 
-from utils import validate_cluster_config
-
-
-def load_yaml_config(filepath):
-    try:
-        with open(filepath, "r") as file:
-            config = yaml.safe_load(file)
-            return config
-    except FileNotFoundError:
-        print("The file was not found.")
-    except yaml.YAMLError as exc:
-        print("An error occurred during YAML parsing.", exc)
+from utils import validate_cluster_config, load_yaml_config, parse_arguments
 
 
 def merge_dictionaries(dict1, dict2):
@@ -39,27 +27,6 @@ def merge_dictionaries(dict1, dict2):
     return merged_dict
 
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description="Load a YAML configuration file.")
-    parser.add_argument(
-        "-y",
-        "--yaml",
-        type=str,
-        required=True,
-        help="Path to the YAML configuration file",
-    )
-    parser.add_argument(
-        "-l",
-        "--logfile",
-        type=str,
-        required=False,
-        default="neuraldb_enterprise.log",
-        help="Path to the log file",
-    )
-
-    return parser.parse_args()
-
-
 def main():
     args = parse_arguments()
 
@@ -67,7 +34,6 @@ def main():
 
     user_config = load_yaml_config(args.yaml)
 
-    # Check yaml file content
     is_valid, msg = validate_cluster_config(user_config)
     if not is_valid:
         logger.error(f"Cluster Validation: {msg}")

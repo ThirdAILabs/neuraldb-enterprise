@@ -1,3 +1,28 @@
+import yaml
+import argparse
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Load a YAML configuration file.")
+    parser.add_argument(
+        "-y",
+        "--yaml",
+        type=str,
+        required=True,
+        help="Path to the YAML configuration file",
+    )
+    parser.add_argument(
+        "-l",
+        "--logfile",
+        type=str,
+        required=False,
+        default="neuraldb_enterprise.log",
+        help="Path to the log file",
+    )
+
+    return parser.parse_args()
+
+
 def validate_keys(config, required_keys):
     for key, subkeys in required_keys.items():
         if key not in config:
@@ -68,3 +93,14 @@ def validate_cluster_config(config):
         return False, "Unknown cluster type configuration"
 
     return is_valid, message
+
+
+def load_yaml_config(filepath):
+    try:
+        with open(filepath, "r") as file:
+            config = yaml.safe_load(file)
+            return config
+    except FileNotFoundError:
+        print("The file was not found.")
+    except yaml.YAMLError as exc:
+        print("An error occurred during YAML parsing.", exc)
