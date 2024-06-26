@@ -67,6 +67,13 @@ class NomadJobDeployer:
         )
 
     def get_acl_token(self):
+        """
+        Retrieves the ACL token needed for authentication with a Nomad server.
+
+        Returns:
+            str: The ACL token retrieved via SSH command execution.
+        """
+    
         command = "grep 'Secret ID' /opt/neuraldb_enterprise/nomad_data/task_runner_token.txt | awk '{print $NF}'"
 
         use_jump = self.nomad_server_private_ip != self.web_ingress_private_ip
@@ -76,8 +83,29 @@ class NomadJobDeployer:
         )
 
     def submit_nomad_job(self, nomad_ip, hcl_template, **kwargs):
+        """
+        Submits a job to the Nomad server using HCL templates and additional parameters.
 
+        Parameters:
+            nomad_ip (str): The IP address of the Nomad server.
+            hcl_template (str): The filepath to the HCL template.
+
+        This function processes an HCL template file, replaces placeholders with actual values, converts the
+        HCL to JSON, and then submits the job to a Nomad server.
+        """
+    
         def replace_placeholders(filepath, replacements):
+            """
+            Replaces placeholders in the file specified by 'filepath' with 'replacements'.
+
+            Parameters:
+                filepath (str): Path to the file containing placeholders.
+                replacements (dict): A dictionary of placeholder keys and their replacement values.
+
+            Returns:
+                str: The path to the temporary file with replaced content.
+            """
+        
             with open(filepath, "r") as file:
                 content = file.read()
 
@@ -96,8 +124,16 @@ class NomadJobDeployer:
 
             return temp_file_path
 
-        # Function to submit job to Nomad
         def submit_to_nomad(hcl_file_path, nomad_endpoint, token):
+            """
+            Submits a job to Nomad using the API endpoints.
+
+            Parameters:
+                hcl_file_path (str): Path to the HCL file with the job definition.
+                nomad_endpoint (str): Base URL for the Nomad API.
+                token (str): ACL token for authentication with the Nomad API.
+            """
+        
             headers = {"Content-Type": "application/json", "X-Nomad-Token": token}
             hcl_to_json_url = f"{nomad_endpoint}v1/jobs/parse"
             submit_job_url = f"{nomad_endpoint}v1/jobs"
@@ -128,7 +164,14 @@ class NomadJobDeployer:
         submit_to_nomad(temp_hcl_path, nomad_endpoint, kwargs["TASK_RUNNER_TOKEN"])
 
     def deploy_jobs(self):
-        """Deploy all necessary jobs to the Nomad server."""
+        """
+        Deploys multiple predefined Nomad jobs to Nomad server
+
+        This function sequentially deploys multiple services by fetching the required ACL token,
+        submitting different Nomad job configurations using HCL templates, and handling dependencies
+        and configurations for each service.
+        """
+
         acl_token = (
             self.get_acl_token()
         )  # Assuming get_acl_token() fetches a valid ACL token

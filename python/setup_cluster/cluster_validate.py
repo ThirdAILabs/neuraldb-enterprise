@@ -16,6 +16,12 @@ class ClusterValidator:
         )
 
     def has_public_ip(self):
+        """
+        Check if any of the nodes in the cluster configuration have a public IP assigned.
+
+        Returns:
+            bool: True if at least one node has a public IP, otherwise logs an error and returns False.
+        """
         has_ip = any("web_ingress" in node for node in self.nodes)
         if not has_ip:
             error_message = "Validation failed: No nodes have a public IP."
@@ -26,6 +32,17 @@ class ClusterValidator:
             return True
 
     def check_ssh_and_sudo_access(self, node_ip, use_jump=True):
+        """
+        Validate SSH and sudo access for a given node IP.
+
+        Parameters:
+            node_ip (str): IP address of the node to check.
+            use_jump (bool): Specifies whether to use a jump host for SSH connections.
+
+        Returns:
+            bool: True if SSH and sudo access are properly configured, otherwise logs an error.
+        """
+        
         commands = ["sudo -n echo Sudo check passed"]
         result = self.ssh_handler.execute_commands(
             commands, node_ip, use_jump=use_jump, run_sequentially=True
@@ -47,6 +64,18 @@ class ClusterValidator:
             return False
 
     def check_internet_access(self, node_ip, use_jump=True):
+        """
+        Verify internet connectivity by pinging google.com from the node.
+
+        Parameters:
+            node_ip (str): IP address of the node to check.
+            use_jump (bool): Specifies whether to use a jump host for the connection.
+
+        Returns:
+            bool: True if the node can access the internet, otherwise logs an error.
+        """
+
+
         commands = ["ping -c 3 www.google.com"]
         result = self.ssh_handler.execute_commands(commands, node_ip, use_jump=use_jump)
         if not result:
@@ -62,6 +91,17 @@ class ClusterValidator:
             return False
 
     def check_system_resources(self, node_ip, use_jump=True):
+        """
+        Check if the node meets minimum system resource requirements (RAM and CPU).
+
+        Parameters:
+            node_ip (str): IP address of the node to check.
+            use_jump (bool): Specifies whether to use a jump host for the connection.
+
+        Returns:
+            bool: True if the node meets the resource criteria, otherwise logs an error.
+        """
+        
         commands = ["cat /proc/meminfo | grep MemTotal", "nproc"]
         result = self.ssh_handler.execute_commands(
             commands, node_ip, use_jump=use_jump, run_sequentially=True
@@ -81,6 +121,17 @@ class ClusterValidator:
             return False
 
     def check_ubuntu_version(self, node_ip, use_jump=True):
+        """
+        Check if the node is running Ubuntu 22.04.
+
+        Parameters:
+            node_ip (str): IP address of the node to check.
+            use_jump (bool): Specifies whether to use a jump host for the connection.
+
+        Returns:
+            bool: True if the node is running Ubuntu 22.04, otherwise logs an error.
+        """
+        
         commands = ["lsb_release -a"]
         result = self.ssh_handler.execute_commands(commands, node_ip, use_jump=use_jump)
         if not result:
@@ -96,6 +147,15 @@ class ClusterValidator:
             return False
 
     def check_port_exposure(self, node_ip, ports, use_jump=True):
+        """
+        
+        Verify that specified ports are not exposed on the node.
+
+        Args:
+            node_ip (str): IP address of the node to check.
+            ports (list): List of ports to check.
+            use_jump (bool): Specifies whether to use a jump host for the connection.
+        """
         passed = True
         for port in ports:
             commands = [f"nc -zv {node_ip} {port}"]
@@ -109,6 +169,13 @@ class ClusterValidator:
         return passed
 
     def validate_cluster(self):
+        """
+        Validate the entire cluster by performing a series of checks on all nodes.
+
+        Returns:
+            dict: A dictionary with node IPs as keys and results of various checks as values.
+        """
+
         if not self.has_public_ip():
             return False
 

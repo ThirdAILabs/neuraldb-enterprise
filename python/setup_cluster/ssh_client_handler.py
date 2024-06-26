@@ -18,6 +18,19 @@ class SSHClientHandler:
         self.logger = logger
 
     def create_ssh_client(self, ip, username, use_jump=False):
+        """
+        Create and return an SSH client connected to the specified IP address.
+        If use_jump is True, uses a jumpbox for the SSH connection.
+
+        Parameters:
+        - ip (str): IP address to connect to.
+        - username (str): SSH username for the connection.
+        - use_jump (bool): Whether to use a jump host for the connection.
+
+        Returns:
+        - SSHClient object if successful, None otherwise.
+        """
+        
         self.logger.debug(f"func: create_ssh_client {ip=} {username=} {use_jump=}")
         try:
             jumpbox_channel = None
@@ -50,6 +63,20 @@ class SSHClientHandler:
     def execute_commands(
         self, commands, ip, use_jump=False, run_sequentially=False, expect_stderr=False
     ):
+        """
+        Execute a list of commands on a remote server and return the output.
+
+        Parameters:
+        - commands (list of str): Commands to execute.
+        - ip (str): IP address of the server.
+        - use_jump (bool): Whether to use a jump host for the SSH connection.
+        - run_sequentially (bool): Whether to run commands one after the other.
+        - expect_stderr (bool): Whether to log stderr without raising a warning.
+
+        Returns:
+        - The output of the commands if successful, None otherwise.
+        """
+
         self.logger.debug("func: execute_commands")
         try:
             ssh_client = self.create_ssh_client(ip, self.node_ssh_username, use_jump)
@@ -92,6 +119,21 @@ class SSHClientHandler:
     def copy_file(
         self, local_path, remote_path, ip, username, direction="get", use_jump=False
     ):
+        """
+        Transfer a file between the local machine and a remote server.
+
+        Parameters:
+        - local_path (str): Path to the local file.
+        - remote_path (str): Path to the remote file.
+        - ip (str): IP address of the server.
+        - username (str): SSH username for the connection.
+        - direction (str): Transfer direction, either 'get' for downloading or 'put' for uploading.
+        - use_jump (bool): Whether to use a jump host for the connection.
+
+        Returns:
+        - True if the file transfer is successful, False otherwise.
+        """
+        
         self.logger.debug("func: copy_file")
         try:
             ssh_client = self.create_ssh_client(ip, username, use_jump)

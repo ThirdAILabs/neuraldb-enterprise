@@ -3,7 +3,6 @@ import json
 from setup_cluster.ssh_client_handler import SSHClientHandler
 import os
 
-
 class NodeStatusChecker:
     def __init__(self, config, logger):
         self.config = config
@@ -32,6 +31,13 @@ class NodeStatusChecker:
         )
 
     def write_status_on_nfs(self):
+        """
+        Writes the status of each node to a status file on a Network File System (NFS).
+
+        Returns:
+            list: A list of results from executing the SSH commands on each node.
+        """
+        
         results = []
         for node in self.nodes:
             ip = node["private_ip"]
@@ -44,6 +50,14 @@ class NodeStatusChecker:
         return results
 
     def verify_status_on_nodes(self):
+        """
+        Verify the NFS status on each node.
+
+        Returns:
+            tuple: A tuple containing a list of results from each node and a boolean indicating the 
+                overall status (True if all nodes are successful, False otherwise).
+        """
+    
         results = []
         check_command_template = "grep -q '{ip} | success' {file_location} && echo '{ip} | success' || echo '{ip} | failed'"
         status = True
@@ -66,6 +80,12 @@ class NodeStatusChecker:
         return results, status
 
     def clean_up(self):
+        """
+        Cleans up by removing the status file on the server.
+
+        Returns:
+            bool: True if the cleanup was successful, False if there was an error.
+        """
         try:
             self.ssh_client_handler.execute_commands(
                 [f"sudo rm -f {self.status_file_loc}"], self.web_ingress_public_ip
