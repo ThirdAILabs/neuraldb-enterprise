@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo apt install jq
+
 # Define the path to the .ssh directory and the key file
 SSH_DIR="$HOME/.ssh"
 KEY_FILE="$SSH_DIR/id_rsa"
