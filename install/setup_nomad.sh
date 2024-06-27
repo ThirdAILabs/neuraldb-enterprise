@@ -14,7 +14,7 @@ node_ssh_username=$(jq -r '.ssh_username' config.json)
 web_ingress_ssh_username=$(jq -r '.nodes[] | select(has("web_ingress")) | .web_ingress.ssh_username' config.json)
 
 repo_url="https://github.com/ThirdAILabs/neuraldb-enterprise.git"
-repo_dir="neuraldb-enterprise"
+repo_dir="neuraldb-enterprise-setup"
 
 for node_private_ip in "${node_private_ips[@]}"; do
     if [ $web_ingress_private_ip == $node_private_ip ]; then
@@ -61,7 +61,7 @@ for node_private_ip in "${node_private_ips[@]}"; do
         sudo apt-get update && sudo apt-get install -y nomad="1.6.2-1"
 
         # Cloning neuraldb-enterprise repo
-        rm -rf "$repo_dir" && git clone "$repo_url" && cd "$repo_dir"
+        rm -rf "$repo_dir" && git clone "$repo_url" "$repo_dir" && cd "$repo_dir"
 
 EOF
 done
@@ -85,7 +85,7 @@ echo "Starting Initial Nomad Server"
 node_pool=$(jq -r --arg ip "$nomad_server_private_ip" '.nodes[] | select(.private_ip == $ip) | .web_ingress.run_jobs as $run_jobs | if $run_jobs == null or $run_jobs == true then "default" else "web_ingress" end' config.json)
 $nomad_server_ssh_command <<EOF
     tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
-    tmux new-session -d -s nomad-agent 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_nomad_agent.sh true true $node_pool $node_class $nomad_server_private_ip $nomad_server_private_ip > head.log 2> head.err'
+    tmux new-session -d -s nomad-agent 'cd neuraldb-enterprise-setup; bash ./nomad/nomad_scripts/start_nomad_agent.sh true true $node_pool $node_class $nomad_server_private_ip $nomad_server_private_ip > head.log 2> head.err'
 EOF
 sleep 20  # Wait until server is running to continue setup
 
@@ -126,6 +126,6 @@ for nomad_client_private_ip in "${nomad_client_private_ips[@]}"; do
 
     $nomad_client_ssh_command <<EOF
         tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
-        tmux new-session -d -s nomad-agent 'cd neuraldb-enterprise; bash ./nomad/nomad_scripts/start_nomad_agent.sh false true $node_pool $node_class $nomad_server_private_ip $nomad_client_private_ip > head.log 2> head.err'
+        tmux new-session -d -s nomad-agent 'cd neuraldb-enterprise-setup; bash ./nomad/nomad_scripts/start_nomad_agent.sh false true $node_pool $node_class $nomad_server_private_ip $nomad_client_private_ip > head.log 2> head.err'
 EOF
 done

@@ -1,5 +1,26 @@
 #!/bin/bash
 
+# Define the path to the .ssh directory and the key file
+SSH_DIR="$HOME/.ssh"
+KEY_FILE="$SSH_DIR/id_rsa.pem"
+
+# Check if .ssh directory exists, if not create it
+if [ ! -d "$SSH_DIR" ]; then
+    mkdir -p "$SSH_DIR"
+    chmod 700 "$SSH_DIR"
+    echo "Created .ssh directory"
+fi
+
+# Check if id_rsa.pem exists
+if [ ! -f "$KEY_FILE" ]; then
+    # Generate the key
+    ssh-keygen -t rsa -b 4096 -f "$KEY_FILE" -N ""
+    
+    # Set the correct permissions
+    chmod 400 "$KEY_FILE"
+fi
+cat ~/.ssh/id_rsa.pub >>~/.ssh/authorized_keys
+
 # Exactly one of 'sql_server' and 'sql_uri' must be specified
 self_hosted_sql_server=$(jq -r 'any(.nodes[]; has("sql_server"))' config.json)
 external_hosted_sql_server=$(jq -r 'has("sql_uri")' config.json)
