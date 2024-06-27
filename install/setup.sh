@@ -2,7 +2,7 @@
 
 # Define the path to the .ssh directory and the key file
 SSH_DIR="$HOME/.ssh"
-KEY_FILE="$SSH_DIR/id_rsa.pem"
+KEY_FILE="$SSH_DIR/id_rsa"
 
 # Check if .ssh directory exists, if not create it
 if [ ! -d "$SSH_DIR" ]; then
@@ -11,7 +11,7 @@ if [ ! -d "$SSH_DIR" ]; then
     echo "Created .ssh directory"
 fi
 
-# Check if id_rsa.pem exists
+# Check if id_rsa exists
 if [ ! -f "$KEY_FILE" ]; then
     # Generate the key
     ssh-keygen -t rsa -b 4096 -f "$KEY_FILE" -N ""
