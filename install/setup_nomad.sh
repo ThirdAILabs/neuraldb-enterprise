@@ -61,7 +61,7 @@ for node_private_ip in "${node_private_ips[@]}"; do
         sudo apt-get update && sudo apt-get install -y nomad="1.6.2-1"
 
         # Cloning neuraldb-enterprise repo
-        rm -rf "$repo_dir" && git clone -b acl "$repo_url" && cd "$repo_dir"
+        rm -rf "$repo_dir" && git clone "$repo_url" && cd "$repo_dir"
 
 EOF
 done

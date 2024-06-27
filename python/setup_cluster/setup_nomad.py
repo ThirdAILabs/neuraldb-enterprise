@@ -45,7 +45,7 @@ class NomadDeployer:
             'keyring_file="/usr/share/keyrings/hashicorp-archive-keyring.gpg" && [ -f "$keyring_file" ] && sudo rm "$keyring_file"; wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o "$keyring_file"; echo "deb [signed-by=$keyring_file] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list',
             "sudo apt-get update",
             "sudo apt-get install -y nomad='1.6.2-1'",
-            "[ -d neuraldb-enterprise ] || git clone -b acl https://github.com/ThirdAILabs/neuraldb-enterprise.git",
+            "[ -d neuraldb-enterprise ] || git clone https://github.com/ThirdAILabs/neuraldb-enterprise.git",
             "cd neuraldb-enterprise && git pull",
         ]
 
