@@ -6,7 +6,10 @@ This installation assumes the following:
 - Every node is running a clean image of Ubuntu Server 22.04 LTS
 - There is at least one node in the cluster with a public IP
   - You are able to SSH into every node using the node with a public IP as a proxy jump node, and you have sudo access to each node
+  - This node must expose ports 22 and 80 to the public network
 - Every node can access any other node in the cluster through the nodes' private IPs
+  - Every node in the cluster must expose ports 22, 80, 4646, and 2049 to the private network
+  - The node running the PostgreSQL server must expose port 5432 to the private network
 - Every node can pull from the internet
 - Every node has at least 8GB of memory and 1 CPU
 
