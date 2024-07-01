@@ -164,18 +164,16 @@ class NomadJobDeployer:
             )
         # Deploy the Traefik job
         self.submit_nomad_job(
-            self.web_ingress_public_ip,
             "../nomad/nomad_jobs/traefik_job.hcl.tpl",
-            TASK_RUNNER_TOKEN=acl_token,
+            acl_token,
             PRIVATE_SERVER_IP=self.nomad_server_private_ip,
             NODE_POOL=self.node_pool,
         )
 
         # Deploy the Model Bazaar job
         self.submit_nomad_job(
-            self.web_ingress_public_ip,
             "../nomad/nomad_jobs/model_bazaar_job.hcl.tpl",
-            TASK_RUNNER_TOKEN=acl_token,
+            acl_token,
             SQL_URI=self.sql_uri,
             SHARE_DIR=self.shared_dir,
             PUBLIC_SERVER_IP=self.web_ingress_public_ip,
@@ -191,7 +189,6 @@ class NomadJobDeployer:
 
         # Deploy the Nomad Autoscaler job
         self.submit_nomad_job(
-            self.web_ingress_public_ip,
             "../nomad/nomad_jobs/nomad_autoscaler_job.hcl",
-            TASK_RUNNER_TOKEN=acl_token,
+            acl_token,
         )
