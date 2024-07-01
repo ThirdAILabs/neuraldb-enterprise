@@ -50,7 +50,7 @@ class SQLServerDeployer:
         -   Stop and remove any existing PostgreSQL Docker containers.
         -   Run a new PostgreSQL Docker container with initialized settings.
         """
-    
+
         ip_list = " ".join(self.sql_client_private_ips)
         # Also added command to clean postgreql database
         commands = f"""
@@ -80,3 +80,5 @@ sudo docker run -d --name neuraldb-enterprise-postgresql-server -e POSTGRES_PASS
             self.sql_server_private_ip if use_jump else self.web_ingress_public_ip,
             use_jump,
         )
+
+        return f"postgresql://modelbazaaruser:${self.sql_server_database_password}@${self.sql_server_private_ip}:5432/modelbazaar"
