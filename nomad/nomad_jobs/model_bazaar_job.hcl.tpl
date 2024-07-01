@@ -62,8 +62,8 @@ EOF
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {
-          username = "neuraldb-enterprise-pull-s3support"
-          password = "6nEF1/9KQZh4L6ysTuSNATJku93N0e02ULRYK64P/a+ACRCL2VFP"
+          username = "neuraldb-enterprise-pull-s3-streaming"
+          password = "XXIpWrFv6MreHf6Ds+U/k85oY4YsooPfY702K4Jv3w+ACRD7zMiw"
           server_address = "neuraldbenterprise.azurecr.io"
         }
         volumes = [
