@@ -22,7 +22,7 @@ echo "Mounting shared drive at $mount_point"
 # Finding the Logical unit number of the attached data disk
 disk_lun=$(az vm show --resource-group $resource_group_name --name Head --query "storageProfile.dataDisks[?name=='DataDisk'].lun" -o tsv)
 $shared_file_system_ssh_command <<EOF
-    sudo apt -y update
+    sudo yum -y check-update
     device_name="/dev/\$(ls -l /dev/disk/azure/scsi1 | grep -oE "lun$disk_lun -> ../../../[a-z]+" | awk -F'/' '{print \$NF}')"
     sudo mkfs.xfs \$device_name
     sudo mkdir -p $mount_point

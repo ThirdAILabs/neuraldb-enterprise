@@ -23,12 +23,12 @@ for node_private_ip in "${node_private_ips[@]}"; do
         node_ssh_command="ssh -o StrictHostKeyChecking=no -J $web_ingress_ssh_username@$web_ingress_public_ip $node_ssh_username@$node_private_ip"
     fi
     $node_ssh_command <<EOF
-        sudo apt update
+        sudo yum -y check-update
 
         # Install wget
         if ! command -v wget &> /dev/null; then
             echo "wget not found. Installing..."
-            sudo apt install -y wget
+            sudo yum install -y wget
         else
             echo "wget is already installed."
         fi
@@ -45,20 +45,28 @@ for node_private_ip in "${node_private_ips[@]}"; do
         # Install tmux
         if ! command -v tmux &> /dev/null; then
             echo "tmux not found. Installing..."
-            sudo apt install -y tmux
+            sudo yum install -y tmux
         else
             echo "tmux is already installed."
         fi
 
         # Install nomad
-        keyring_file="/usr/share/keyrings/hashicorp-archive-keyring.gpg"
-        if [ -f "\$keyring_file" ]; then
-            # Remove the existing keyring file to avoid the prompt
-            sudo rm "\$keyring_file"
-        fi
-        wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o "\$keyring_file"
-        echo "deb [signed-by=\$keyring_file] https://apt.releases.hashicorp.com \$(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-        sudo apt-get update && sudo apt-get install -y nomad="1.6.2-1"
+        # Add HashiCorp GPG key
+        sudo rpm --import https://rpm.releases.hashicorp.com/RPM-GPG-KEY-hashicorp
+
+        # Add HashiCorp repository
+        sudo tee /etc/yum.repos.d/hashicorp.repo <<EOF
+        [hashicorp]
+        name=HashiCorp Stable - \$basearch
+        baseurl=https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+        enabled=1
+        gpgcheck=1
+        gpgkey=https://rpm.releases.hashicorp.com/RPM-GPG-KEY-hashicorp
+        EOF
+
+        # Update repository list and install Nomad
+        sudo yum -y check-update
+        sudo yum install -y nomad-1.6.2
 
         # Cloning neuraldb-enterprise repo
         rm -rf "$repo_dir" && git clone "$repo_url" "$repo_dir" && cd "$repo_dir"

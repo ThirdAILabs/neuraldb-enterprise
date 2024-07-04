@@ -18,7 +18,7 @@ fi
 shared_dir=$(jq -r '.nodes[] | select(has("shared_file_system")) | .shared_file_system.shared_dir' config.json)
 
 $shared_file_system_ssh_command <<EOF
-    sudo apt -y update
+    sudo yum -y check-update
     sudo groupadd -g 4646 nomad_nfs || true
     sudo useradd -u 4646 -g 4646 nomad_nfs || true
     sudo usermod -a -G 4646 $node_ssh_username
@@ -39,8 +39,8 @@ create_nfs_server=$(jq -r '.nodes[] | select(has("shared_file_system")) | .share
 if [ $create_nfs_server == "true"  ]; then
     nfs_client_private_ips=($(jq -r --arg ip "$shared_file_system_private_ip" '.nodes[] | select(.private_ip != $ip) | .private_ip' config.json))
     $shared_file_system_ssh_command <<EOF
-        sudo apt install -y nfs-kernel-server
-        sudo apt install -y acl
+        sudo yum install -y nfs-utils
+        sudo yum install -y acl
         sudo setfacl -d -R -m u::rwx,g::rwx,o::r $shared_dir
 
         # Add NFS client IPs to /etc/exports
@@ -71,8 +71,8 @@ EOF
             shared_file_system_ssh_command="ssh -o StrictHostKeyChecking=no -J $web_ingress_ssh_username@$web_ingress_public_ip $node_ssh_username@$nfs_client_private_ip"
         fi
         $shared_file_system_ssh_command <<EOF
-            sudo apt -y update
-            sudo apt-get install -y nfs-common
+            sudo yum -y check-update
+            sudo yum install -y nfs-utils
             if [ ! -d "$shared_dir" ]; then
                 echo "Creating shared directory: $shared_dir"
                 sudo mkdir -p "$shared_dir"
