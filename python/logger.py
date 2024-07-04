@@ -29,15 +29,12 @@ class LoggerConfig:
             },
         )
 
-        # File handler setup
-        file_handler = logging.FileHandler(self.log_file, mode="w")
+        file_handler = logging.FileHandler(self.log_file, mode="a")
         file_handler.setFormatter(file_formatter)
 
-        # Console handler setup
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(colored_formatter)
 
-        # Basic configuration with multiple handlers
         logging.basicConfig(
             level=self.level,
             format=log_format,
