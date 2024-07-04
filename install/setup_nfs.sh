@@ -54,12 +54,12 @@ if [ $create_nfs_server == "true"  ]; then
             fi
         done
         sudo exportfs -ra
-        if sudo systemctl is-active --quiet nfs-kernel-server; then
-            sudo systemctl restart nfs-kernel-server
+        if sudo systemctl is-active --quiet nfs-server; then
+            sudo systemctl restart nfs-server
         else
-            sudo systemctl start nfs-kernel-server
+            sudo systemctl start nfs-server
         fi
-        sudo systemctl enable nfs-kernel-server
+        sudo systemctl enable nfs-server
 EOF
 
 
