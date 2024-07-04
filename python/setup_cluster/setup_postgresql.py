@@ -81,4 +81,4 @@ sudo docker run -d --name neuraldb-enterprise-postgresql-server -e POSTGRES_PASS
             use_jump,
         )
 
-        return f"postgresql://modelbazaaruser:${self.sql_server_database_password}@${self.sql_server_private_ip}:5432/modelbazaar"
+        return f"postgresql://modelbazaaruser:{self.sql_server_database_password}@{self.sql_server_private_ip}:5432/modelbazaar"

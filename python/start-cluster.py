@@ -183,14 +183,13 @@ def main():
     external_sql_uri = check_sql_configuration(user_cluster_config, logger)
 
     if not external_sql_uri:
-        user_cluster_config["sql_uri"] = psql_deployer = SQLServerDeployer(
-            user_cluster_config, logger
-        )
+        psql_deployer = SQLServerDeployer(user_cluster_config, logger)
         try:
-            psql_deployer.deploy_sql_server()
+            user_cluster_config["sql_uri"] = psql_deployer.deploy_sql_server()
         except Exception as e:
             logger.error(f"Error occurred,  {e}")
             raise
+
     else:
         user_cluster_config["sql_uri"] = external_sql_uri
 
