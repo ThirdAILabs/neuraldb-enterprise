@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sudo apt install -y jq
+sudo yum install -y jq
 
 # Define the path to the .ssh directory and the key file
 SSH_DIR="$HOME/.ssh"
