@@ -35,9 +35,13 @@ for node_private_ip in "${node_private_ips[@]}"; do
 
         # Install docker
         if ! command -v docker &> /dev/null; then
-            wget -O get-docker.sh https://get.docker.com/
-            bash get-docker.sh
-            docker run hello-world
+            sudo yum update -y
+            sudo yum install docker -y
+            sudo systemctl start docker
+            sudo docker run hello-world
+            sudo systemctl enable docker
+            sudo usermod -a -G docker $(whoami)
+            newgrp docker
         else
             echo "Docker is already installed."
         fi
