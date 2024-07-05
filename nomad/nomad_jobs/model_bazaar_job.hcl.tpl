@@ -60,12 +60,12 @@ EOF
       }
 
       config {
-        image = "neuraldbenterprise.azurecr.io/model_bazaar_s3-streaming:latest"
+        image = "neuraldbenterprise.azurecr.io/model_bazaar_s3-streaming-v2:latest"
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {
-          username = "neuraldb-enterprise-pull-s3-streaming"
-          password = "XXIpWrFv6MreHf6Ds+U/k85oY4YsooPfY702K4Jv3w+ACRD7zMiw"
+          username = "neuraldb-enterprise-pull-s3-streaming-v2"
+          password = "NA+0OjbQtAIaHj/VcGVtGIZizBk6JWaee2OQMW60EP+ACRBBALyC"
           server_address = "neuraldbenterprise.azurecr.io"
         }
         volumes = [
