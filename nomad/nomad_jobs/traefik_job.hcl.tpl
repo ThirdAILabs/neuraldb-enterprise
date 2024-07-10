@@ -8,7 +8,7 @@ job "traefik" {
     value = "web_ingress"
   }
 
-  node_pool = "default"
+  node_pool = "{{ NODE_POOL }}"
 
   group "traefik" {
     count = 1
