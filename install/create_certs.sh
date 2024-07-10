@@ -11,12 +11,14 @@ $web_ingress_ssh_command <<EOF
     sudo apt install openssl
     sudo mkdir -p $certs_dir
     cd $certs_dir
-    sudo openssl req -x509 -newkey rsa:4096 -keyout traefik.key -out traefik.crt -days 365 -nodes -subj "/CN=$web_ingress_public_ip"
+    sudo openssl req -x509 -newkey rsa:4096 -keyout traefik.key -out traefik.crt -days 365 -nodes -subj "/CN=NEURALDB ENTERPRISE CERT" -addext "subjectAltName = IP:$web_ingress_public_ip"
 
-    cat <<EOT | sudo tee $certs_dir/certificates.toml
-[[tls.certificates]]
-  certFile = "$certs_dir/traefik.crt"
-  keyFile = "$certs_dir/traefik.key"
+    cat <<EOT | sudo tee certificates.toml
+[tls.stores]
+  [tls.stores.default]
+    [tls.stores.default.defaultCertificate]
+      certFile = "/certs/traefik.crt"
+      keyFile = "/certs/traefik.key"
 EOT
 
 EOF

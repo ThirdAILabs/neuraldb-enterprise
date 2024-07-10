@@ -60,14 +60,14 @@ EOF
           "--entrypoints.websecure.address=:${NOMAD_PORT_https}",
           "--entrypoints.traefik.address=:${NOMAD_PORT_admin}",
           "--providers.nomad=true",
-          "--providers.nomad.endpoint.address=http://172.31.24.191:4646", ### IP to your nomad server 
+          "--providers.nomad.endpoint.address=http://{{ PRIVATE_SERVER_IP }}:4646", ### IP to your nomad server 
           "--providers.nomad.endpoint.token=${TASK_RUNNER_TOKEN}",
           "--entrypoints.websecure.http.tls=true",
           "--providers.file.filename=/certs/certificates.toml",
           "--log.level=DEBUG"
         ]
         volumes = [
-          "/certs:/certs",
+          "/opt/neuraldb_enterprise/certs:/certs",
         ]
       }
     }
