@@ -28,6 +28,9 @@ else
         bash setup_postgresql.sh
     fi
 
+    # Create self-signed certificate for HTTPS
+    bash create_certs.sh
+
     # Now we can launch the Model Bazaar jobs onto our nomad cluster 
     bash launch_nomad_jobs.sh
 fi

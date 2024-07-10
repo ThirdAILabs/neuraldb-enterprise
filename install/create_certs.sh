@@ -7,11 +7,11 @@ web_ingress_ssh_command="ssh -o StrictHostKeyChecking=no $web_ingress_ssh_userna
 
 certs_dir="/opt/neuraldb_enterprise/certs"
 
-$shared_file_system_ssh_command <<EOF
+$web_ingress_ssh_command <<EOF
     sudo apt install openssl
     sudo mkdir -p $certs_dir
     cd $certs_dir
-    openssl req -x509 -newkey rsa:4096 -keyout traefik.key -out traefik.crt -days 365 -nodes -subj "/CN=$web_ingress_public_ip"
+    sudo openssl req -x509 -newkey rsa:4096 -keyout traefik.key -out traefik.crt -days 365 -nodes -subj "/CN=$web_ingress_public_ip"
 
     cat <<EOT | sudo tee $certs_dir/certificates.toml
 [[tls.certificates]]

@@ -51,6 +51,7 @@ for node_private_ip in "${node_private_ips[@]}"; do
         fi
 
         # Install nomad
+        sudo apt-get install -y gpg coreutils gnupg
         keyring_file="/usr/share/keyrings/hashicorp-archive-keyring.gpg"
         if [ -f "\$keyring_file" ]; then
             # Remove the existing keyring file to avoid the prompt
