@@ -28,6 +28,8 @@ else
         bash setup_postgresql.sh
     fi
 
+    bash create_sql_uri.sh
+
     # Create self-signed certificate for HTTPS
     bash create_certs.sh
 
