@@ -35,12 +35,12 @@ job "modelbazaar" {
         data        = <<EOF
 {{- with nomadVar "nomad/jobs" -}}
 TASK_RUNNER_TOKEN = {{ .task_runner_token }}
+DATABASE_URI = {{ .sql_uri }}
 {{- end -}}
 EOF
       }
 
       env {
-        DATABASE_URI = "{{ SQL_URI }}"
         PUBLIC_MODEL_BAZAAR_ENDPOINT = "http://{{ PUBLIC_SERVER_IP }}/"
         PRIVATE_MODEL_BAZAAR_ENDPOINT = "http://{{ PRIVATE_SERVER_IP }}/"
         LICENSE_PATH = "/model_bazaar/license/ndb_enterprise_license.json"
@@ -55,6 +55,7 @@ EOF
         GENAI_KEY = "{{ GENAI_KEY }}"
 
         TASK_RUNNER_TOKEN = "${TASK_RUNNER_TOKEN}"
+        DATABASE_URI = "${DATABASE_URI}"
       }
 
       config {
