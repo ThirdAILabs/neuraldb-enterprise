@@ -1,7 +1,7 @@
 from setup_cluster.ssh_client_handler import SSHClientHandler
 import os
 import tempfile
-import requests
+import json
 
 
 class NomadJobDeployer:
@@ -33,12 +33,7 @@ class NomadJobDeployer:
         )
         self.node_ssh_username = self.config["ssh_username"]
 
-        sql_server_node = next(
-            node for node in self.config["nodes"] if "sql_server" in node
-        )
-        self.sql_server_database_password = sql_server_node["sql_server"][
-            "database_password"
-        ]
+        self.sql_uri = self.config["sql_uri"]
         shared_file_system_node = next(
             node for node in self.config["nodes"] if "shared_file_system" in node
         )
@@ -73,7 +68,7 @@ class NomadJobDeployer:
         Returns:
             str: The ACL token retrieved via SSH command execution.
         """
-    
+
         command = "grep 'Secret ID' /opt/neuraldb_enterprise/nomad_data/task_runner_token.txt | awk '{print $NF}'"
 
         use_jump = self.nomad_server_private_ip != self.web_ingress_private_ip
@@ -82,86 +77,72 @@ class NomadJobDeployer:
             [command], ip if use_jump else self.web_ingress_public_ip, use_jump
         )
 
-    def submit_nomad_job(self, nomad_ip, hcl_template, **kwargs):
+    def submit_nomad_job(self, hcl_template, acl_token, **kwargs):
         """
-        Submits a job to the Nomad server using HCL templates and additional parameters.
+        Submits a job to the Nomad server using an HCL template and SSH connections handled by SSHClientHandler.
 
         Parameters:
-            nomad_ip (str): The IP address of the Nomad server.
             hcl_template (str): The filepath to the HCL template.
-
-        This function processes an HCL template file, replaces placeholders with actual values, converts the
-        HCL to JSON, and then submits the job to a Nomad server.
+            acl_token (str): ACL token for authentication with the Nomad API.
         """
-    
+
         def replace_placeholders(filepath, replacements):
             """
             Replaces placeholders in the file specified by 'filepath' with 'replacements'.
-
-            Parameters:
-                filepath (str): Path to the file containing placeholders.
-                replacements (dict): A dictionary of placeholder keys and their replacement values.
-
-            Returns:
-                str: The path to the temporary file with replaced content.
             """
-        
             with open(filepath, "r") as file:
                 content = file.read()
 
             self.logger.info(f"Initial Content: {content}")
-            self.logger.info(f"Replacement Content: {kwargs}")
             for key, value in replacements.items():
                 content = content.replace(f"{{{{ {key} }}}}", str(value))
 
             temp_file = tempfile.NamedTemporaryFile(delete=False, mode="w")
             temp_file_path = temp_file.name
-
-            self.logger.info(f"Final Content: {content}")
-            # Write the modified content to the temporary file
             with open(temp_file_path, "w") as temp_file:
                 temp_file.write(content)
 
             return temp_file_path
 
-        def submit_to_nomad(hcl_file_path, nomad_endpoint, token):
+        def submit_to_nomad_via_ssh(temp_hcl_path, acl_token):
             """
-            Submits a job to Nomad using the API endpoints.
-
-            Parameters:
-                hcl_file_path (str): Path to the HCL file with the job definition.
-                nomad_endpoint (str): Base URL for the Nomad API.
-                token (str): ACL token for authentication with the Nomad API.
+            Submits a job to Nomad using the SSH connection handled by SSHClientHandler.
             """
-        
-            headers = {"Content-Type": "application/json", "X-Nomad-Token": token}
-            hcl_to_json_url = f"{nomad_endpoint}v1/jobs/parse"
-            submit_job_url = f"{nomad_endpoint}v1/jobs"
+            hcl_to_json_url = "http://localhost:4646/v1/jobs/parse"
+            submit_job_url = "http://localhost:4646/v1/jobs"
 
-            with open(hcl_file_path, "r") as file:
-                hcl_content = file.read()
+            try:
+                # Reading HCL file content
+                with open(temp_hcl_path, "r") as file:
+                    hcl_content = file.read()
 
-            # Convert HCL to JSON using the Nomad API
-            response = requests.post(
-                hcl_to_json_url,
-                headers=headers,
-                json={"JobHCL": hcl_content, "Canonicalize": True},
-            )
-            job_json = response.json()
+                # Convert HCL to JSON payload
+                hcl_payload = json.dumps({"JobHCL": hcl_content, "Canonicalize": True})
+                json_payload = self.ssh_client_handler.execute_commands(
+                    [
+                        f"curl -s -X POST -H 'Content-Type: application/json' -H 'X-Nomad-Token: {acl_token}' -d '{hcl_payload}' '{hcl_to_json_url}'"
+                    ],
+                    self.web_ingress_private_ip,
+                    use_jump=True,
+                )
+                self.logger.info(f"Converted JSON Payload: {json_payload}")
 
-            # Submit the job JSON to Nomad
-            final_response = requests.post(
-                submit_job_url, headers=headers, json={"Job": job_json}
-            )
-            self.logger.info(final_response.text)  # Log the response for debugging
+                # Submit the JSON payload to Nomad
+                final_response = self.ssh_client_handler.execute_commands(
+                    [
+                        f"curl -s -X POST -H 'Content-Type: application/json' -H 'X-Nomad-Token: {acl_token}' -d '{{\"Job\":{json_payload}}}' '{submit_job_url}'"
+                    ],
+                    self.web_ingress_private_ip,
+                    use_jump=True,
+                )
+                self.logger.info(f"Nomad Submission Response: {final_response}")
+            finally:
+                # Cleanup the temporary file
+                os.remove(temp_hcl_path)
 
-            # Cleanup the temporary file
-            os.remove(hcl_file_path)
-
-        # TODO(pratik/kartik): move this to local host in place of nomad_ip
-        nomad_endpoint = f"http://{nomad_ip}:4646/"
+        # Main process
         temp_hcl_path = replace_placeholders(hcl_template, kwargs)
-        submit_to_nomad(temp_hcl_path, nomad_endpoint, kwargs["TASK_RUNNER_TOKEN"])
+        submit_to_nomad_via_ssh(temp_hcl_path, acl_token)
 
     def deploy_jobs(self):
         """
@@ -183,19 +164,17 @@ class NomadJobDeployer:
             )
         # Deploy the Traefik job
         self.submit_nomad_job(
-            self.web_ingress_public_ip,
             "../nomad/nomad_jobs/traefik_job.hcl.tpl",
-            TASK_RUNNER_TOKEN=acl_token,
+            acl_token,
             PRIVATE_SERVER_IP=self.nomad_server_private_ip,
             NODE_POOL=self.node_pool,
         )
 
         # Deploy the Model Bazaar job
         self.submit_nomad_job(
-            self.web_ingress_public_ip,
             "../nomad/nomad_jobs/model_bazaar_job.hcl.tpl",
-            TASK_RUNNER_TOKEN=acl_token,
-            DB_PASSWORD=self.sql_server_database_password,
+            acl_token,
+            SQL_URI=self.sql_uri,
             SHARE_DIR=self.shared_dir,
             PUBLIC_SERVER_IP=self.web_ingress_public_ip,
             PRIVATE_SERVER_IP=self.nomad_server_private_ip,
@@ -210,7 +189,6 @@ class NomadJobDeployer:
 
         # Deploy the Nomad Autoscaler job
         self.submit_nomad_job(
-            self.web_ingress_public_ip,
             "../nomad/nomad_jobs/nomad_autoscaler_job.hcl",
-            TASK_RUNNER_TOKEN=acl_token,
+            acl_token,
         )
