@@ -82,7 +82,7 @@ submit_nomad_job() {
     echo $json_payload
 
     # Submit JSON to Nomad
-    response=$(curl -s -X POST -H "$content_header" -H "$token_header" -d {"Job":$json_payload} "$submit_job_url")
+    response=$(curl -s -X POST -H "$content_header" -H "$token_header" -d "{"Job":$json_payload}" "$submit_job_url")
     echo $response
 
     # Cleanup temporary file
