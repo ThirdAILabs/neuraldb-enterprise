@@ -5,19 +5,7 @@ sql_server_database_dir=$(jq -r '.nodes[] | select(has("sql_server")) | .sql_ser
 sql_server_database_password=$(jq -r '.nodes[] | select(has("sql_server")) | .sql_server.database_password' config.json)
 sql_client_private_ips=($(jq -r --arg ip "$sql_server_private_ip" '.nodes[] | select(.private_ip != $ip) | .private_ip' config.json))
 
-web_ingress_private_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .private_ip' config.json)
-web_ingress_public_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .web_ingress.public_ip' config.json)
 
-node_ssh_username=$(jq -r '.ssh_username' config.json)
-web_ingress_ssh_username=$(jq -r '.nodes[] | select(has("web_ingress")) | .web_ingress.ssh_username' config.json)
-
-if [ $web_ingress_private_ip == $sql_server_private_ip ]; then
-    sql_server_ssh_command="ssh -o StrictHostKeyChecking=no $web_ingress_ssh_username@$web_ingress_public_ip"
-else
-    sql_server_ssh_command="ssh -o StrictHostKeyChecking=no -J $web_ingress_ssh_username@$web_ingress_public_ip $node_ssh_username@$sql_server_private_ip"
-fi
-
-$sql_server_ssh_command <<EOF
 set -e
 
 sudo mkdir -p $sql_server_database_dir/docker-postgres-init
@@ -50,5 +38,3 @@ sudo docker run -d \
   -v $sql_server_database_dir/data:/var/lib/postgresql/data \
   -p 5432:5432 \
   postgres
-
-EOF

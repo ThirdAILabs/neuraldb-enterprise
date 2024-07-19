@@ -32,7 +32,7 @@ else
     nomad_server_ssh_command="ssh -o StrictHostKeyChecking=no -J $web_ingress_ssh_username@$web_ingress_public_ip $node_ssh_username@$nomad_server_private_ip"
 fi
 
-acl_token=$($nomad_server_ssh_command "grep 'Secret ID' \"/opt/neuraldb_enterprise/nomad_data/task_runner_token.txt\" | awk '{print \$NF}'")
+acl_token=$(grep 'Secret ID' /opt/neuraldb_enterprise/nomad_data/task_runner_token.txt | awk '{print $NF}')
 
 
 # TODO: SSH into the nomad server node and launch the jobs locally. Also block port 4646 from external connections
