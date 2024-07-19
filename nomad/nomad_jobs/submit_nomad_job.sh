@@ -77,14 +77,12 @@ submit_nomad_job() {
     hcl_to_json_url="http://localhost:4646/v1/jobs/parse"
     submit_job_url="http://localhost:4646/v1/jobs"
 
-    hcl_payload='$hcl_payload'
-
     # Convert HCL to JSON using the Nomad API
     json_payload=$(curl -s -X POST -H "$content_header" -H "$token_header" -d "$hcl_payload" "$hcl_to_json_url")
     echo $json_payload
 
     # Submit JSON to Nomad
-    response=$(curl -s -X POST -H "$content_header" -H "$token_header" -d "{\"Job\":$json_payload}" "$submit_job_url")
+    response=$(curl -s -X POST -H "$content_header" -H "$token_header" -d {"Job":$json_payload} "$submit_job_url")
     echo $response
 
     # Cleanup temporary file
