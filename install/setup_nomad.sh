@@ -95,7 +95,7 @@ $nomad_server_ssh_command <<EOF
         sudo bash -c "nomad acl bootstrap > $nomad_data_dir/management_token.txt 2>&1"
     fi
     management_token=\$(grep 'Secret ID' "$nomad_data_dir/management_token.txt"  | awk '{print \$NF}')
-    cd "$repo_dir"
+    cd neuraldb-enterprise
     nomad acl policy apply -description "Task Runner policy" -token "\$management_token" task-runner "./nomad/nomad_node_configs/task_runner.policy.hcl"
     nomad acl token create -name="Task Runner token" -policy=task-runner -type=client -token "\$management_token" 2>&1 | sudo tee $nomad_data_dir/task_runner_token.txt > /dev/null
     task_runner_token=\$(grep 'Secret ID' "$nomad_data_dir/task_runner_token.txt"  | awk '{print \$NF}')
