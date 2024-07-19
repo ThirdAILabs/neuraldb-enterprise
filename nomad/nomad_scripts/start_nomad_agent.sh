@@ -1,3 +1,7 @@
+#!/bin/bash
+
+script_dir=$(dirname "$(realpath "$0")")
+
 # Check for command-line argument
 if [ "$#" -ne 6 ]; then
     echo "Usage: $0 <server_enabled> <client_enabled> <node_pool> <node_class> <nomad_server_private_ip> <node_private_ip>"
@@ -17,6 +21,6 @@ fi
 export NOMAD_SERVER_PRIVATE_IP=$5
 export NODE_PRIVATE_IP=$6
 
-envsubst < ./nomad/nomad_node_configs/nomad_agent_config.hcl.tpl > ./nomad/nomad_node_configs/nomad_agent_config.hcl
+envsubst < $script_dir/../nomad_node_configs/nomad_agent_config.hcl.tpl > $script_dir/../nomad_node_configs/nomad_agent_config.hcl
 
-sudo nomad agent -config=./nomad/nomad_node_configs/nomad_agent_config.hcl
+sudo nomad agent -config=$script_dir/../nomad_node_configs/nomad_agent_config.hcl
