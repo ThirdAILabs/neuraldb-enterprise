@@ -53,7 +53,7 @@ echo "Starting Initial Nomad Server"
 
 node_pool=$(jq -r --arg ip "$nomad_server_private_ip" '.nodes[] | select(.private_ip == $ip) | .web_ingress.run_jobs as $run_jobs | if $run_jobs == null or $run_jobs == true then "default" else "web_ingress" end' config.json)
 tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
-tmux new-session -d -s nomad-agent 'bash ../nomad/nomad_scripts/start_nomad_agent.sh true true $node_pool $node_class $nomad_server_private_ip $nomad_server_private_ip > head.log 2> head.err'
+tmux new-session -d -s nomad-agent "bash ../nomad/nomad_scripts/start_nomad_agent.sh true true $node_pool $node_class $nomad_server_private_ip $nomad_server_private_ip > head.log 2> head.err"
 sleep 10  # Wait until server is running to continue setup
 
 
