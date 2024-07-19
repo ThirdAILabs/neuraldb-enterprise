@@ -8,6 +8,7 @@ sudo yum -y check-update
 sudo groupadd -g 4646 nomad_nfs || true
 sudo useradd -u 4646 -g 4646 nomad_nfs || true
 sudo usermod -a -G 4646 $node_ssh_username
+newgrp nomad_nfs
 
 sudo mkdir -p $shared_dir
 sudo mkdir -p "$shared_dir/license"
