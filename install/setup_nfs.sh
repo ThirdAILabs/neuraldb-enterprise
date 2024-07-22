@@ -22,5 +22,3 @@ sudo chmod -R g+s $shared_dir
 sudo yum install -y nfs-utils
 sudo yum install -y acl
 sudo setfacl -d -R -m u::rwx,g::rwx,o::r $shared_dir
-
-newgrp nomad_nfs
