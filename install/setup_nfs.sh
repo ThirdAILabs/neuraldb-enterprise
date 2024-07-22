@@ -8,7 +8,6 @@ sudo yum -y check-update
 sudo groupadd -g 4646 nomad_nfs || true
 sudo useradd -u 4646 -g 4646 nomad_nfs || true
 sudo usermod -a -G 4646 $node_ssh_username
-newgrp nomad_nfs
 
 sudo mkdir -p $shared_dir
 sudo mkdir -p "$shared_dir/license"
@@ -23,3 +22,5 @@ sudo chmod -R g+s $shared_dir
 sudo yum install -y nfs-utils
 sudo yum install -y acl
 sudo setfacl -d -R -m u::rwx,g::rwx,o::r $shared_dir
+
+newgrp nomad_nfs
