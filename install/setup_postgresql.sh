@@ -17,9 +17,9 @@ sudo tee init-db.sh > /dev/null <<'EOD'
 {
     echo "host  all all 172.17.0.0/16  md5"
     for IP in ${sql_client_private_ips[@]}; do
-        echo "host  all all \$IP/32  md5"
+        echo "host  all all $IP/32  md5"
     done
-} >> "\$PGDATA/pg_hba.conf"
+} >> "$PGDATA/pg_hba.conf"
 EOD
 
 sudo chmod +x init-db.sh
