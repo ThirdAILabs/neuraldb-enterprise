@@ -64,6 +64,8 @@ Paste the `public_ip` of your `web_ingress` node into your browser, and you shou
 
 Ensure that network security precautions are taken before uploading sensitive files to this instance of NeuralDB Enterprise, if your public IP is exposed to the internet.
 
+To update NeuralDB Enterprise, you can run `bash update_neuraldb_enterprise.sh`. This will update your instance with the latest version of variables listed in `variables.sh`. For example, if you want to update your instance with a new OpenAI key, you can update `genai_key` in `variables.sh`, and then run `bash update_neuraldb_enterprise.sh`. If the `ndb_enterprise_version` variable in `variables.sh` is set to "latest", then this script will also update NeuralDB Enterprise to the latest available version. If `ndb_enterprise_version` is set to a specific version, then this script will set NeuralDB Enterprise to that version.
+
 
 #### Extra Precautions
 
