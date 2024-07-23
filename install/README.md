@@ -55,6 +55,7 @@ These instructions will walk through how to set up NeuralDB Enterprise on your L
    - `jwt_secret` is used to encrypt authentication tokens for logins to Model Bazaar. This can be set to any random string, but make sure to save this value.
    - `autoscaling_enabled` determines whether NeuralDB Enterprise automatically autoscales the number of deployments under heavy query loads.
    - `autoscaler_max_count` determines the maximum number of deployment jobs that are spun up to handle large query loads.
+   - `ndb_enterprise_version` determines the version of NeuralDB Enterprise to use when launching or restarting the instance. If it is set to "latest", it will pull the latest version of NeuralDB enterprise, otherwise it will launch the specified version.
    - (Optional arg. Only applies for users that have specifically contacted us about airgapped support) `airgapped_license_path` is a path to the file license we'll send you. The file must be named `license.serialized`.
 7. Run `bash setup.sh` in the Terminal.
 
@@ -63,6 +64,8 @@ Wait for the setup process to complete (approximately 10 minutes), and you have 
 Paste the `public_ip` of your `web_ingress` node into your browser, and you should see a login screen, where you can create an account, verify your email, and start training NeuralDB's! An admin account will already be created for you using `admin_mail` and `admin_password` as the login credentials.
 
 Ensure that network security precautions are taken before uploading sensitive files to this instance of NeuralDB Enterprise, if your public IP is exposed to the internet.
+
+To update NeuralDB Enterprise, you can run `bash update_neuraldb_enterprise.sh`. This will update your instance with the variables listed in `variables.sh`. For example, if you want to update your instance with a new OpenAI key, you can update `genai_key` in `variables.sh`, and then run `bash update_neuraldb_enterprise.sh`. If the `ndb_enterprise_version` variable in `variables.sh` is set to "latest", then this script will also update NeuralDB Enterprise to the latest available version. If `ndb_enterprise_version` is set to a specific version, then this script will set NeuralDB Enterprise to that version.
 
 
 #### Extra Precautions
