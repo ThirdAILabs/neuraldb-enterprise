@@ -14,7 +14,7 @@ genai_key="open-ai-api-key"
 # It is defaulted to 'latest', which will always pull the latest version of 
 # NeuralDB Enterprise if the instance is started or restarted.
 # To pin a version, you can specify a version number. Currently we have versions:
-# "v0.1.0", "v0.1.1", and "v0.1.2". Dedicated version page coming soon.
+# "v0.1.0", "v0.1.1", "v0.1.2", and "v0.1.3". Dedicated version page coming soon.
 ndb_enterprise_version="latest"
 
 

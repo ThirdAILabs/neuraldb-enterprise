@@ -55,6 +55,7 @@ These instructions will walk through how to set up NeuralDB Enterprise on your L
    - `jwt_secret` is used to encrypt authentication tokens for logins to Model Bazaar. This can be set to any random string, but make sure to save this value.
    - `autoscaling_enabled` determines whether NeuralDB Enterprise automatically autoscales the number of deployments under heavy query loads.
    - `autoscaler_max_count` determines the maximum number of deployment jobs that are spun up to handle large query loads.
+   - `ndb_enterprise_version` determines the version of NeuralDB Enterprise to use when launching or restarting the instance. If it is set to "latest", it will pull the latest version of NeuralDB enterprise, otherwise it will launch the specified version.
    - (Optional arg. Only applies for users that have specifically contacted us about airgapped support) `airgapped_license_path` is a path to the file license we'll send you. The file must be named `license.serialized`.
 7. Run `bash setup.sh` in the Terminal.
 
