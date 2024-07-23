@@ -33,6 +33,14 @@ for node_private_ip in "${node_private_ips[@]}"; do
             echo "wget is already installed."
         fi
 
+        # Install git
+        if ! command -v git &> /dev/null; then
+            echo "git not found. Installing..."
+            sudo yum install -y git
+        else
+            echo "git is already installed."
+        fi
+
         # Install docker
         if ! command -v docker &> /dev/null; then
             sudo yum update -y
