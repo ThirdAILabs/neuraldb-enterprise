@@ -1,3 +1,5 @@
+#!/bin/bash
+
 nomad_data_dir=/opt/neuraldb_enterprise/nomad_data
 
 web_ingress_private_ip=$(jq -r '.nodes[] | select(has("web_ingress")) | .private_ip' config.json)
