@@ -8,7 +8,7 @@ web_ingress_ssh_command="ssh -o StrictHostKeyChecking=no $web_ingress_ssh_userna
 certs_dir="/opt/neuraldb_enterprise/certs"
 
 $web_ingress_ssh_command <<EOF
-    sudo yum install openssl
+    sudo yum install -y openssl
     sudo mkdir -p $certs_dir
     cd $certs_dir
     sudo openssl req -x509 -newkey rsa:4096 -keyout traefik.key -out traefik.crt -days 365 -nodes -subj "/CN=NEURALDB ENTERPRISE CERT" -addext "subjectAltName = IP:$web_ingress_public_ip"
