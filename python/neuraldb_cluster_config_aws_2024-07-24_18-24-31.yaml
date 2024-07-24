@@ -1,0 +1,42 @@
+cluster_type_config: aws
+project:
+  name: thirdai-platform
+ndb_enterprise_version: latest
+ssh:
+  key_name: thirdai-platform-key
+  public_key_path: /Users/pratikqpranav/.ssh/id_rsa.pub
+network:
+  region: us-west-1
+  vpc_cidr_block: 192.168.0.0/16
+  subnet_cidr_block: 192.168.0.0/24
+vm_setup:
+  type: t2.2xlarge
+  ssh_username: ubuntu
+  vm_count: 2
+security:
+  license_path: /Users/pratikqpranav/Downloads/ndb_enterprise_license.json
+  jwt_secret: 1234
+  admin:
+    email: admin@mail.com
+    username: admin
+    password: password
+api:
+  genai_key: open-ai-api-key
+autoscaling:
+  enabled: false
+  max_count: 1
+nodes:
+- private_ip: 192.168.0.10
+  web_ingress:
+    public_ip: 54.153.58.72
+    run_jobs: true
+    ssh_username: ubuntu
+  sql_server:
+    database_dir: /opt/neuraldb_enterprise/database
+    database_password: password
+  shared_file_system:
+    create_nfs_server: true
+    shared_dir: /opt/neuraldb_enterprise/model_bazaar
+  nomad_server: true
+- private_ip: 192.168.0.37
+ssh_username: ubuntu

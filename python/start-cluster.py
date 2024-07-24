@@ -16,7 +16,7 @@ from setup_cluster.setup_postgresql import SQLServerDeployer
 from setup_cluster.launch_nomad_jobs import NomadJobDeployer
 from setup_cluster.cluster_validate import ClusterValidator
 
-from utils import validate_cluster_config, check_sql_configuration
+from utils import validate_cluster_config
 
 
 def load_yaml_config(filepath):
