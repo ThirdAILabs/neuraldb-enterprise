@@ -35,7 +35,6 @@ class NomadJobDeployer:
         )
         self.node_ssh_username = self.config["ssh_username"]
 
-        self.sql_uri = self.config["sql_uri"]
         shared_file_system_node = next(
             node for node in self.config["nodes"] if "shared_file_system" in node
         )

@@ -71,31 +71,3 @@ def validate_cluster_config(config):
         return False, "Unknown cluster type configuration"
 
     return is_valid, message
-
-
-def check_sql_configuration(user_cluster_config, logger):
-    sql_uri = None
-    if "sql_configuration" in user_cluster_config:
-        sql_config = user_cluster_config["sql_configuration"]
-
-        # Check if use_external is true
-        use_external = sql_config.get("use_external", False)
-        if use_external:
-            external_sql_uri = sql_config.get("external_sql_uri")
-            if external_sql_uri:
-                logger.info(
-                    f"sql_configuration exists and use_external is True. Using specified database: {external_sql_uri}"
-                )
-                sql_uri = external_sql_uri
-            else:
-                logger.warning(
-                    "sql_configuration exists and use_external is True, but no specified database. Initializing SQL database."
-                )
-        else:
-            logger.info(
-                "sql_configuration exists but use_external is False. Initializing SQL database."
-            )
-    else:
-        logger.warning("sql_configuration does not exist. Initializing SQL database.")
-
-    return sql_uri
