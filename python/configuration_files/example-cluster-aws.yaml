@@ -11,6 +11,8 @@ project:
   # Unique name for the project
   name: thirdai-platform
 
+ndb_enterprise_version: "latest"
+
 # SSH Configuration
 ssh:
   # Name of the SSH key to be used for accessing VMs

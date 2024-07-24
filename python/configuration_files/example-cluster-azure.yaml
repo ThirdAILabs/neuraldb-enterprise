@@ -7,6 +7,8 @@ ssh:
   # Path to the public SSH key file
   public_key_path: /path/to/.ssh/id_rsa.pub
 
+ndb_enterprise_version: "latest"
+
 # Azure-specific resource configuration for setting up the infrastructure.
 azure_resources:
   # Azure region where the resources will be deployed.

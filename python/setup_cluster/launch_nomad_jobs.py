@@ -13,6 +13,8 @@ class NomadJobDeployer:
         self.api = self.config.get("api", {})
         self.autoscaling = self.config.get("autoscaling", {})
 
+        self.ndb_enterprise_version = self.config["ndb_enterprise_version"]
+
         self.shared_file_system_private_ip = next(
             node["private_ip"]
             for node in self.config["nodes"]
@@ -174,7 +176,6 @@ class NomadJobDeployer:
         self.submit_nomad_job(
             "../nomad/nomad_jobs/model_bazaar_job.hcl.tpl",
             acl_token,
-            SQL_URI=self.sql_uri,
             SHARE_DIR=self.shared_dir,
             PUBLIC_SERVER_IP=self.web_ingress_public_ip,
             PRIVATE_SERVER_IP=self.nomad_server_private_ip,
@@ -185,6 +186,7 @@ class NomadJobDeployer:
             AUTOSCALING_ENABLED=self.autoscaling_enabled,
             AUTOSCALER_MAX_COUNT=self.autoscaler_max_count,
             GENAI_KEY=self.genai_key,
+            NDBE_VERSION=self.ndb_enterprise_version,
         )
 
         # Deploy the Nomad Autoscaler job
