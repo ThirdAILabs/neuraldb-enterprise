@@ -41,6 +41,14 @@ for node_private_ip in "${node_private_ips[@]}"; do
             echo "git is already installed."
         fi
 
+        # Install dmidecode
+        if ! command -v dmidecode &> /dev/null; then
+            echo "dmidecode not found. Installing..."
+            sudo yum install -y dmidecode
+        else
+            echo "dmidecode is already installed."
+        fi
+
         # Install docker
         if ! command -v docker &> /dev/null; then
             sudo yum update -y
