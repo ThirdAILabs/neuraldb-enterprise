@@ -59,12 +59,12 @@ EOF
       }
 
       config {
-        image = "neuraldbenterprise.azurecr.io/model_bazaar:{{ NDBE_VERSION }}"
+        image = "neuraldbenterprise.azurecr.io/model_bazaar_fips:{{ NDBE_VERSION }}"
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {
-          username = "neuraldb-enterprise-pull"
-          password = "yVGj3GVOJBJM4Lm+HOkvSfIZV435fHeHYVPgjyw2jt+ACRDwaC/l"
+          username = "neuraldb-enterprise-pull-fips"
+          password = "p/HSe57ZaVLFxaY+ZPSJqejfw6DswYMk2Kn1fRQM2T+ACRBmIAlu"
           server_address = "neuraldbenterprise.azurecr.io"
         }
         volumes = [
