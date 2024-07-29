@@ -10,7 +10,7 @@ vpc_id=$(aws ec2 create-vpc --region $region --cidr-block $vpc_cidr_block --tag-
 echo "VPC ID: $vpc_id"
 
 # Create Subnet 
-subnet_id=$(aws ec2 create-subnet --vpc-id $vpc_id --cidr-block $subnet_cidr_block --tag-specifications "ResourceType=subnet,Tags=[{Key=Project,Value=${project_name}}]" --query Subnet.SubnetId --output text)
+subnet_id=$(aws ec2 create-subnet --vpc-id $vpc_id --cidr-block $subnet_cidr_block --availability-zone $availability_zone --tag-specifications "ResourceType=subnet,Tags=[{Key=Project,Value=${project_name}}]" --query Subnet.SubnetId --output text)
 echo "Subnet ID: $subnet_id"
 
 # Now setup internet-gateway and route-table associated with VPC
@@ -34,29 +34,43 @@ aws ec2 authorize-security-group-ingress --group-id $sg_id --protocol tcp --port
 aws ec2 authorize-security-group-ingress --group-id $sg_id --protocol all --source-group $sg_id
 
 # Now launch Head Node
-head_node_id=$(aws ec2 run-instances --image-id ami-0c7217cdde317cfec \
+head_node_id=$(aws ec2 run-instances --image-id ami-03972092c42e8c0ca \
   --count 1 \
   --instance-type $instance_type \
   --key-name $key_name \
   --security-group-ids $sg_id \
   --subnet-id $subnet_id \
   --associate-public-ip-address \
-  --block-device-mappings 'DeviceName=/dev/sda1,Ebs={VolumeSize=32}' \
+  --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=32}' \
   --tag-specifications "ResourceType=instance,Tags=[{Key=Project,Value=${project_name}}]" \
   --query 'Instances[0].InstanceId' --output text)
 echo "Head Node ID: $head_node_id"
 
+aws ec2 wait instance-running --instance-ids $head_node_id
+
+# Attach existing volume to head node if volume id is provided. Otherwise, create a new volume.
+if [ -z "$existing_volume_id" ]; then
+  volume_id=$(aws ec2 create-volume --tag-specifications "ResourceType=volume,Tags=[{Key=Project,Value=${project_name}}]" --availability-zone $availability_zone --size $volume_size --volume-type $volume_type --query 'VolumeId' --output text)
+  aws ec2 wait volume-available --volume-ids $volume_id
+  echo "Volume ID: $volume_id"
+else
+  echo "Using existing Volume ID: $existing_volume_id"
+  volume_id=$existing_volume_id
+fi
+
+aws ec2 attach-volume --volume-id $volume_id --instance-id $head_node_id --device $volume_device_name
+
 client_node_ids=()
 for ((i=0; i<$vm_count; i++))
 do
-  client_node_id=$(aws ec2 run-instances --image-id ami-0c7217cdde317cfec \
+  client_node_id=$(aws ec2 run-instances --image-id ami-03972092c42e8c0ca \
     --count 1 \
     --instance-type $instance_type \
     --key-name $key_name \
     --security-group-ids $sg_id \
     --subnet-id $subnet_id \
     --associate-public-ip-address \
-    --block-device-mappings 'DeviceName=/dev/sda1,Ebs={VolumeSize=32}' \
+    --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=32}' \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Project,Value=${project_name}}]" \
     --query 'Instances[0].InstanceId' --output text)
   echo "Client Node ID: $client_node_id"
@@ -73,7 +87,7 @@ if [ ! -f "config.json" ]; then
       \"web_ingress\": {
         \"public_ip\": \"\",
         \"run_jobs\": true,
-        \"ssh_username\": \"ubuntu\"
+        \"ssh_username\": \"ec2-user\"
       },
       \"sql_server\": {
         \"database_dir\": \"/opt/neuraldb_enterprise/database\",
@@ -86,7 +100,7 @@ if [ ! -f "config.json" ]; then
       \"nomad_server\": true
     }
   ],
-  \"ssh_username\": \"ubuntu\"
+  \"ssh_username\": \"ec2-user\"
 }" > config.json
 fi
 
