@@ -19,4 +19,8 @@ export NODE_PRIVATE_IP=$6
 
 envsubst < ./nomad/nomad_node_configs/nomad_agent_config.hcl.tpl > ./nomad/nomad_node_configs/nomad_agent_config.hcl
 
-sudo nomad agent -config=./nomad/nomad_node_configs/nomad_agent_config.hcl
+sudo mkdir -p /etc/nomad.d
+sudo mv ./nomad/nomad_node_configs/nomad_agent_config.hcl /etc/nomad.d/
+sudo systemctl enable nomad
+sudo systemctl stop nomad
+sudo systemctl start nomad
