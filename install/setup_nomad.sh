@@ -22,7 +22,6 @@ if ! command -v docker &> /dev/null; then
     sudo docker run hello-world
     sudo systemctl enable docker
     sudo usermod -a -G docker $(whoami)
-    newgrp docker
 else
     echo "Docker is already installed."
 fi
