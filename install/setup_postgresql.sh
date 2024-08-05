@@ -24,7 +24,7 @@ EOD
 
 sudo chmod +x init-db.sh
 
-sudo docker pull postgres
+# sudo docker pull postgres
 
 sudo docker stop neuraldb-enterprise-postgresql-server || true
 sudo docker rm neuraldb-enterprise-postgresql-server || true
