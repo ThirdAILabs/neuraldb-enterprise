@@ -60,7 +60,7 @@ EOF
       }
 
       config {
-        image = "neuraldbenterprise.azurecr.io/model_bazaar_s3-streaming:v0.0.5"
+        image = "neuraldbenterprise.azurecr.io/model_bazaar_s3-streaming:v0.0.16"
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {
