@@ -6,7 +6,6 @@ sql_server_database_password=$(jq -r '.nodes[] | select(has("sql_server")) | .sq
 sql_client_private_ips=($(jq -r --arg ip "$sql_server_private_ip" '.nodes[] | select(.private_ip != $ip) | .private_ip' config.json))
 
 
-set -e
 
 sudo mkdir -p $sql_server_database_dir/docker-postgres-init
 sudo mkdir -p $sql_server_database_dir/data
@@ -24,7 +23,7 @@ EOD
 
 sudo chmod +x init-db.sh
 
-# sudo docker pull postgres
+sudo docker pull postgres
 
 sudo docker stop neuraldb-enterprise-postgresql-server || true
 sudo docker rm neuraldb-enterprise-postgresql-server || true
