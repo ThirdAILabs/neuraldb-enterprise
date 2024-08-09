@@ -59,7 +59,7 @@ EOF
       }
 
       config {
-        image = "neuraldbenterprise.azurecr.io/model_bazaar:latest"
+        image = "neuraldbenterprise.azurecr.io/model_bazaar:{{ NDBE_VERSION }}"
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {
