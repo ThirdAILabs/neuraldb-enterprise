@@ -55,6 +55,7 @@ EOF
         GENAI_KEY = "{{ GENAI_KEY }}"
         AWS_ACCESS_KEY = "{{ AWS_ACCESS_KEY }}"
         AWS_ACCESS_SECRET = "{{ AWS_ACCESS_SECRET }}"
+        AWS_SESSION_TOKEN = "{{ AWS_SESSION_TOKEN }}"
 
         TASK_RUNNER_TOKEN = "${TASK_RUNNER_TOKEN}"
       }
