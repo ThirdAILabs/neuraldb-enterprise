@@ -6,6 +6,10 @@
 # Cluster type configuration
 cluster_type_config: aws
 
+sql_configuration:
+  use_external: false  # Set to true if using an external SQL server, false if self-hosted.
+  external_sql_uri: "postgresql://externaluser:externalpassword@externalhost:5432/externaldb"   # Optional, used if use_external is true.
+
 # Project settings
 project:
   # Unique name for the project

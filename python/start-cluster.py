@@ -16,7 +16,7 @@ from setup_cluster.setup_postgresql import SQLServerDeployer
 from setup_cluster.launch_nomad_jobs import NomadJobDeployer
 from setup_cluster.cluster_validate import ClusterValidator
 
-from utils import validate_cluster_config
+from utils import validate_cluster_config, check_sql_configuration
 
 
 def load_yaml_config(filepath):
@@ -178,6 +178,26 @@ def main():
     except Exception as e:
         logger.error(f"Error occurred,  {e}")
         raise
+
+    psql_deployer = SQLServerDeployer(user_cluster_config, logger)
+
+    # TODO(pratik): pass external_sql_uri this to NomadJobDeployer
+    external_sql_uri = check_sql_configuration(user_cluster_config, logger)
+
+    if not external_sql_uri:
+        try:
+            user_cluster_config["sql_uri"] = psql_deployer.deploy_sql_server()
+        except Exception as e:
+            logger.error(f"Error occurred,  {e}")
+            raise
+
+    else:
+        user_cluster_config["sql_uri"] = external_sql_uri
+
+    nomad_data_dir = "/opt/neuraldb_enterprise/nomad_data"
+    psql_deployer.update_nomad_with_sql_uri(
+        user_cluster_config["sql_uri"], nomad_data_dir
+    )
 
     nomad_job_deployer = NomadJobDeployer(user_cluster_config, logger)
     try:
