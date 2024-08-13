@@ -24,12 +24,12 @@ ssh:
   # Name of the SSH key to be used for accessing VMs
   key_name: thirdai-platform-key
   # Path to the public SSH key file
-  public_key_path: /Users/pratikqpranav/.ssh/id_rsa.pub  # Ensure this is an absolute path
+  public_key_path: /path/to/.ssh/id_rsa.pub  # Ensure this is an absolute path
 
 # Network Configuration
 network:
   # AWS region where the resources will be deployed
-  region: us-west-1
+  region: us-east-1
   # CIDR block for the VPC(Do not change it, unless you know what you are doing!)
   vpc_cidr_block: 192.168.0.0/16
   # CIDR block for the subnet within the VPC(Do not change it, unless you know what you are doing!)
@@ -47,7 +47,7 @@ vm_setup:
 # Security settings
 security:
   # Path to the license file for NeuralDB Enterprise
-  license_path: /Users/pratikqpranav/Downloads/ndb_enterprise_license.json
+  license_path: /path/to/Downloads/ndb_enterprise_license.json
   # JWT secret used for token generation, should be a secure random string
   jwt_secret: 1234  # This should be changed to a secure, random string
   # Admin user configuration
