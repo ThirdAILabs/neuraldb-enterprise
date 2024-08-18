@@ -47,7 +47,7 @@ vm_setup:
 # Security settings
 security:
   # Path to the license file for NeuralDB Enterprise
-  license_path: /path/to/Downloads/ndb_enterprise_license.json
+  license_path: /path/to/ndb_enterprise_license.json
   # JWT secret used for token generation, should be a secure random string
   jwt_secret: 1234  # This should be changed to a secure, random string
   # Admin user configuration
