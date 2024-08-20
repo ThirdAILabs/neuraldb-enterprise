@@ -19,8 +19,8 @@ job "modelbazaar" {
 
       tags = [
         "traefik.enable=true",
-        "traefik.http.routers.modelbazaar-http.rule=PathPrefix(`/`)",
-        "traefik.http.routers.modelbazaar-http.priority=1"
+        "traefik.http.routers.modelbazaar-http.rule=PathPrefix(`/api`)",
+        "traefik.http.routers.modelbazaar-http.priority=10"
       ]
     }
 
@@ -59,13 +59,13 @@ EOF
       }
 
       config {
-        image = "neuraldbenterprise.azurecr.io/model_bazaar:{{ NDBE_VERSION }}"
+        image = "thirdaiplatform.azurecr.io/thirdai_platform_release-test:{{ NDBE_VERSION }}"
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {
-          username = "neuraldb-enterprise-pull"
-          password = "yVGj3GVOJBJM4Lm+HOkvSfIZV435fHeHYVPgjyw2jt+ACRDwaC/l"
-          server_address = "neuraldbenterprise.azurecr.io"
+          username = "thirdaiplatform-pull-release-test"
+          password = "ivG00o0TTx10TZDh6Y4chVxDEGR92h0ib4uA5WjF2H+ACRC95ggs"
+          server_address = "thirdaiplatform.azurecr.io"
         }
         volumes = [
           "{{ SHARE_DIR }}:/model_bazaar"

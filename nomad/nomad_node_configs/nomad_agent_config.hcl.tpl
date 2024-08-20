@@ -43,6 +43,9 @@ limits {
 
 plugin "docker" {
   config {
+    gc {
+      image = false
+    }
     volumes {
       enabled = true
     }
