@@ -1,5 +1,10 @@
-[web_ingress]
-50.18.43.92 ansible_user=ubuntu
+all:
+  hosts:
+    nomad_server:
+      ansible_host: 50.18.43.92
+      ansible_user: ubuntu
 
-[nfs_clients]
-192.168.0.74 ansible_user=ubuntu
+    nomad_client:
+      ansible_host: 192.168.0.74
+      ansible_user: ubuntu
+      ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p ubuntu@50.18.43.92"'
