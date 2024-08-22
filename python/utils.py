@@ -12,6 +12,7 @@ def validate_keys(config, required_keys):
 def validate_cluster_config(config):
     local_required_keys = {
         "cluster_type_config": {},
+        "ndb_enterprise_version": {},
         "nodes": [],
         "ssh_username": {},
         "security": {
@@ -24,6 +25,7 @@ def validate_cluster_config(config):
     }
     aws_required_keys = {
         "cluster_type_config": {},
+        "ndb_enterprise_version": {},
         "project": {"name": {}},
         "ssh": {"key_name": {}, "public_key_path": {}},
         "network": {"region": {}, "vpc_cidr_block": {}, "subnet_cidr_block": {}},
@@ -38,6 +40,7 @@ def validate_cluster_config(config):
     }
     azure_required_keys = {
         "cluster_type_config": {},
+        "ndb_enterprise_version": {},
         "ssh": {"public_key_path": {}},
         "azure_resources": {
             "location": {},

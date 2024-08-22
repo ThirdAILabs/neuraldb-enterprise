@@ -82,3 +82,19 @@ sudo docker run -d --name neuraldb-enterprise-postgresql-server -e POSTGRES_PASS
         )
 
         return f"postgresql://modelbazaaruser:{self.sql_server_database_password}@{self.sql_server_private_ip}:5432/modelbazaar"
+
+    def update_nomad_with_sql_uri(self, sql_uri, nomad_data_dir):
+        """
+        Static method to update the Nomad server with the SQL URI.
+        """
+        commands = f"""
+management_token=$(grep 'Secret ID' "{nomad_data_dir}/management_token.txt"  | awk '{{print $NF}}')
+nomad var get -namespace default -token "$management_token" nomad/jobs | nomad var put -namespace default -token "$management_token" -in=json -out=table - sql_uri={sql_uri} > /dev/null
+"""
+        use_jump = self.web_ingress_private_ip != self.sql_server_private_ip
+
+        self.ssh_client_handler.execute_commands(
+            [commands],
+            self.sql_server_private_ip if use_jump else self.web_ingress_public_ip,
+            use_jump,
+        )

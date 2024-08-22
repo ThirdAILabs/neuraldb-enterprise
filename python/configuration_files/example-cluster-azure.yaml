@@ -2,10 +2,18 @@
 # This section specifies the use of Azure as the cloud provider for the cluster.
 cluster_type_config: azure
 
+# Following is an optional configuration if using external sql_conf. If use_external is true, thirdai-enterprise will automatically 
+# use this sql server and WILL NOT create its own sql server.
+sql_configuration:
+  use_external: false  # Set to true if using an external SQL server, false if self-hosted.
+  external_sql_uri: "postgresql://externaluser:externalpassword@externalhost:5432/externaldb"   # Optional, used if use_external is true.
+
 # SSH Configuration
 ssh:
   # Path to the public SSH key file
   public_key_path: /path/to/.ssh/id_rsa.pub
+
+ndb_enterprise_version: "latest"
 
 # Azure-specific resource configuration for setting up the infrastructure.
 azure_resources:

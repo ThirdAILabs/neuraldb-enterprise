@@ -10,6 +10,8 @@ sql_configuration:
   use_external: false  # Set to true if using an external SQL server, false if self-hosted.
   external_sql_uri: "postgresql://externaluser:externalpassword@externalhost:5432/externaldb"   # Optional, used if use_external is true.
 
+ndb_enterprise_version: "latest"
+
 # Configuration details for the nodes within the cluster.
 nodes:
   - private_ip: <web_ingress__private_ip>  # Internal IP address of the first node.
