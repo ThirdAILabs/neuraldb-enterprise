@@ -1,7 +1,4 @@
----
 - name: Validate Cluster Nodes
-  hosts: all
-  become: yes
   tasks:
     - name: Verify if all nodes have public IPs
       set_fact:

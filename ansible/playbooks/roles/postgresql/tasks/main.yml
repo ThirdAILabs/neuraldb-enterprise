@@ -1,0 +1,100 @@
+---
+- name: Set up PostgreSQL if self-hosted
+  when: self_hosted_sql_server
+  block:
+    - name: Create necessary directories on SQL server
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0644'
+        # do we actually need it?
+        owner: postgres
+        group: postgres
+      loop:
+        - "{{ sql_server_database_dir }}/docker-postgres-init"
+        - "{{ sql_server_database_dir }}/data"
+      when: inventory_hostname == sql_server_private_ip
+
+    - name: Create init-db.sh script
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          {
+              echo "host  all all 172.17.0.0/16  md5"
+              {% for IP in sql_client_private_ips %}
+              echo "host  all all {{ IP }}/32  md5"
+              {% endfor %}
+          } >> "$PGDATA/pg_hba.conf"
+        dest: "{{ sql_server_database_dir }}/docker-postgres-init/init-db.sh"
+        mode: '0755'
+        owner: postgres
+        group: postgres
+      when: inventory_hostname == sql_server_private_ip
+
+    - name: Pull PostgreSQL Docker image
+      community.docker.docker_image:
+        name: postgres
+        source: pull
+      when: inventory_hostname == sql_server_private_ip
+
+    - name: Stop existing PostgreSQL container
+      community.docker.docker_container:
+        name: neuraldb-enterprise-postgresql-server
+        state: absent
+      when: inventory_hostname == sql_server_private_ip
+
+    - name: Run PostgreSQL container
+      community.docker.docker_container:
+        name: neuraldb-enterprise-postgresql-server
+        image: postgres
+        state: started
+        restart_policy: always
+        env:
+          POSTGRES_PASSWORD: "{{ sql_server_database_password }}"
+          POSTGRES_DB: modelbazaar
+          POSTGRES_USER: modelbazaaruser
+        volumes:
+          - "{{ sql_server_database_dir }}/docker-postgres-init:/docker-entrypoint-initdb.d"
+          - "{{ sql_server_database_dir }}/data:/var/lib/postgresql/data"
+        ports:
+          - "5432:5432"
+      when: inventory_hostname == sql_server_private_ip
+
+- name: Determine SQL URI after PostgreSQL container setup
+  ansible.builtin.set_fact:
+    sql_uri: "postgresql://modelbazaaruser:{{ sql_server_database_password }}@{{ sql_server_private_ip }}:5432/modelbazaar"
+  when: self_hosted_sql_server
+
+- name: Generate SQL URI if using ENV
+  when: sql_uri == "ENV"
+  block:
+    - name: Get Nomad management token
+      ansible.builtin.shell: |
+        set -o pipefail
+        management_token=$(grep 'Secret ID' "/opt/neuraldb_enterprise/nomad_data/management_token.txt" | awk '{print $NF}')
+        echo $management_token
+      register: nomad_management_token
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Update Nomad variable with ENV-based SQL URI
+      ansible.builtin.shell: |
+        set -o pipefail
+        nomad var get -namespace default -token "{{ nomad_management_token.stdout }}" nomad/jobs | \
+        nomad var put -namespace default -token "{{ nomad_management_token.stdout }}" -in=json -out=table - \
+        sql_uri=postgresql://\${DB_USERNAME}:\${DB_PASSWORD}@\${DB_HOSTNAME}:5432/\${DB_NAME} > /dev/null
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+- name: Update Nomad with the determined SQL URI
+  ansible.builtin.shell: |
+    set -o pipefail
+    management_token=$(grep 'Secret ID' "/opt/neuraldb_enterprise/nomad_data/management_token.txt"  | awk '{print $NF}')
+    nomad var get -namespace default -token "$management_token" nomad/jobs | \
+    nomad var put -namespace default -token "$management_token" -in=json -out=table - sql_uri={{ sql_uri }} > /dev/null
+  args:
+    executable: /bin/bash
+  changed_when: false
+  when: sql_uri != "ENV"

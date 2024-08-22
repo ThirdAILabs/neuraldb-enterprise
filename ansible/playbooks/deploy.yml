@@ -1,7 +1,7 @@
 ---
 - name: Deploy NeuralDB Enterprise
   hosts: all
-  become: yes
+  become: true
   gather_facts: false
 
   vars:
