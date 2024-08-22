@@ -1,0 +1,101 @@
+---
+- name: Install and configure NFS server if required
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create NFS directories
+      block:
+        - name: Create NFS directories and set permissions
+          file:
+            path: "{{ shared_dir }}/{{ item.path }}"
+            state: directory
+            mode: '{{ item.mode }}'
+            owner: root
+            group: nomad_nfs
+          loop:
+            - { path: "license", mode: "0774" }
+            - { path: "models", mode: "0774" }
+            - { path: "data", mode: "0774" }
+            - { path: "users", mode: "0774" }
+
+        - name: Set group sticky bit on NFS shared directories
+          file:
+            path: "{{ shared_dir }}/{{ item }}"
+            mode: g+s
+            owner: root
+            group: nomad_nfs
+          loop:
+            - license
+            - models
+            - data
+            - users
+      when: inventory_hostname == shared_file_system_private_ip 
+    
+    - name: Install NFS server on the designated NFS server node
+      block:
+        - name: Install NFS server packages
+          apt:
+            name:
+              - nfs-kernel-server
+              - acl
+            state: present
+            update_cache: yes
+
+        - name: Set default ACLs on NFS shared directories
+          ansible.posix.acl:
+            path: "{{ shared_dir }}"
+            entity: "{{ item.entity }}"
+            etype: default
+            permissions: "{{ item.permissions }}"
+            state: present
+            default: yes
+            recurse: yes
+          loop:
+            - { entity: "user", permissions: "rwx" }
+            - { entity: "group", permissions: "rwx" }
+            - { entity: "other", permissions: "r" }
+
+        - name: Configure /etc/exports for NFS clients
+          lineinfile:
+            path: /etc/exports
+            line: "{{ shared_dir }} {{ item.private_ip }}(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"
+            create: yes
+          loop: "{{ nfs_clients }}"
+
+        - name: Apply NFS export configuration
+          command: exportfs -ra
+
+        - name: Ensure NFS service is running
+          systemd:
+            name: nfs-kernel-server
+            state: restarted
+            enabled: yes
+      when: inventory_hostname == shared_file_system_private_ip and create_nfs_server
+
+    - name: Install and configure NFS clients
+      block:
+        - name: Install NFS client packages
+          apt:
+            name: nfs-common
+            state: present
+            update_cache: yes
+
+        - name: Create the shared directory on the client if it doesn't exist
+          file:
+            path: "{{ shared_dir }}"
+            state: directory
+
+        - name: Mount the shared directory from NFS server
+          mount:
+            path: "{{ shared_dir }}"
+            src: "{{ shared_file_system_private_ip }}:{{ shared_dir }}"
+            fstype: nfs
+            opts: rw,hard,intr
+            state: mounted
+
+        - name: Ensure the NFS mount is persistent in fstab
+          lineinfile:
+            path: /etc/fstab
+            line: "{{ shared_file_system_private_ip }}:{{ shared_dir }} {{ shared_dir }} nfs rw,hard,intr 0 0"
+            create: yes
+      when: inventory_hostname != shared_file_system_private_ip

@@ -1,0 +1,33 @@
+---
+- name: Copy the NeuralDB Enterprise license to the web ingress server
+  hosts: all
+  become: yes
+  tasks:
+    - name: Copy license file to web ingress server
+      ansible.builtin.copy:
+        src: "{{ license_path }}"
+        dest: "{{ shared_dir }}/license/ndb_enterprise_license.json"
+        owner: "{{ web_ingress_ssh_username }}"
+        group: nomad_nfs
+        mode: '0664'
+      when: inventory_hostname == web_ingress.private_ip
+
+    - name: Copy license file if it exists
+      ansible.builtin.copy:
+        src: "{{ airgapped_license_path }}"
+        dest: "{{ shared_dir }}/license/"
+        owner: "{{ web_ingress_ssh_username }}"
+        group: nomad_nfs
+        mode: '0664'
+      when:
+        - airgapped_license_path is defined
+        - airgapped_license_path | length > 0
+        - inventory_hostname == web_ingress.private_ip
+
+    - name: Set correct permissions for the license file
+      ansible.builtin.file:
+        path: "{{ shared_dir }}/license/ndb_enterprise_license.json"
+        mode: '0664'
+        owner: "{{ web_ingress_ssh_username }}"
+        group: nomad_nfs
+      when: inventory_hostname == web_ingress.private_ip

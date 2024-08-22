@@ -1,0 +1,88 @@
+---
+- name: Submit Nomad jobs
+  hosts: all
+  become: yes
+  tasks:
+
+    - name: Create a directory for Nomad jobs on the remote machine
+      file:
+        path: /opt/neuraldb_enterprise/nomad_jobs
+        state: directory
+        mode: '0755'
+
+    - name: Copy Nomad job templates to the remote machine
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: '0644'
+      loop:
+        - { src: "{{ playbook_dir }}/../files/nomad/nomad_jobs/traefik_job.hcl.tpl", dest: "/opt/neuraldb_enterprise/nomad_jobs/traefik_job.hcl.tpl" }
+        - { src: "{{ playbook_dir }}/../files/nomad/nomad_jobs/model_bazaar_job.hcl.tpl", dest: "/opt/neuraldb_enterprise/nomad_jobs/model_bazaar_job.hcl.tpl" }
+        - { src: "{{ playbook_dir }}/../files/nomad/nomad_jobs/nomad_autoscaler_job.hcl", dest: "/opt/neuraldb_enterprise/nomad_jobs/nomad_autoscaler_job.hcl" }
+
+    - name: Retrieve the Nomad ACL token
+      shell: |
+        grep 'Secret ID' "/opt/neuraldb_enterprise/nomad_data/task_runner_token.txt" | awk '{print $NF}'
+      register: acl_token
+      args:
+        executable: /bin/bash
+      when: inventory_hostname == nomad_server_private_ip
+
+    - name: Define common variables for jobs
+      set_fact:
+        common_vars: |
+          PRIVATE_SERVER_IP={{ nomad_server_private_ip }}
+          NODE_POOL={{ node_pool }}
+          SHARE_DIR={{ shared_dir }}
+          PUBLIC_SERVER_IP={{ web_ingress_public_ip }}
+          JWT_SECRET={{ jwt_secret }}
+          ADMIN_USERNAME={{ admin_username }}
+          ADMIN_MAIL={{ admin_mail }}
+          ADMIN_PASSWORD={{ admin_password }}
+          AUTOSCALING_ENABLED={{ autoscaling_enabled }}
+          AUTOSCALER_MAX_COUNT={{ autoscaler_max_count }}
+          GENAI_KEY={{ genai_key }}
+          NDBE_VERSION={{ ndb_enterprise_version }}
+
+    - name: Submit a Nomad job
+      block:
+        - name: Replace placeholders in HCL file (OS-specific)
+          shell: |
+            temp_hcl_file=$(mktemp)
+            cp /opt/neuraldb_enterprise/nomad_jobs/{{ item.hcl_file }} $temp_hcl_file
+
+            {% if ansible_os_family == 'Darwin' %}
+            for var in {{ common_vars }}; do
+              key=$(echo "$var" | cut -d '=' -f 1)
+              value=$(echo "$var" | cut -d '=' -f 2)
+              sed -i '' "s|{{ $key }}|$value|g" "$temp_hcl_file"
+            done
+            {% else %}
+            for var in {{ common_vars }}; do
+              key=$(echo "$var" | cut -d '=' -f 1)
+              value=$(echo "$var" | cut -d '=' -f 2)
+              sed -i "s|{{ $key }}|$value|g" "$temp_hcl_file"
+            done
+            {% endif %}
+
+            echo "$temp_hcl_file"
+          register: temp_hcl_file_path
+          args:
+            executable: /bin/bash
+
+        - name: Submit job to Nomad
+          shell: |
+            hcl_content=$(cat {{ temp_hcl_file_path.stdout }})
+            hcl_payload=$(jq -n --arg hcl "$hcl_content" '{JobHCL: $hcl, Canonicalize: true}')
+            json_payload=$(curl -s -X POST -H "Content-Type: application/json" -H "X-Nomad-Token: {{ acl_token.stdout }}" -d "$hcl_payload" "http://localhost:4646/v1/jobs/parse")
+            response=$(curl -s -X POST -H "Content-Type: application/json" -H "X-Nomad-Token: {{ acl_token.stdout }}" -d "{\"Job\":$json_payload}" "http://localhost:4646/v1/jobs")
+            echo $response
+            rm "{{ temp_hcl_file_path.stdout }}"
+          args:
+            executable: /bin/bash
+
+      loop:
+        - { hcl_file: "traefik_job.hcl.tpl" }
+        - { hcl_file: "model_bazaar_job.hcl.tpl" }
+        - { hcl_file: "nomad_autoscaler_job.hcl" }
+      when: inventory_hostname == nomad_server_private_ip

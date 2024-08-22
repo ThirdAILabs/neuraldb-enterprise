@@ -1,0 +1,121 @@
+---
+- name: Install Nomad and dependencies on all nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install wget if not present
+      apt:
+        name: wget
+        state: present
+
+    - name: Install Docker if not present
+      shell: |
+        if ! command -v docker &> /dev/null; then
+          wget -O get-docker.sh https://get.docker.com/
+          bash get-docker.sh
+          docker run hello-world
+        fi
+      args:
+        executable: /bin/bash
+
+    - name: Install tmux if not present
+      apt:
+        name: tmux
+        state: present
+
+    - name: Install Nomad
+      shell: |
+        sudo apt-get install -y gpg coreutils gnupg
+        keyring_file="/usr/share/keyrings/hashicorp-archive-keyring.gpg"
+        if [ -f "$keyring_file" ]; then
+          sudo rm "$keyring_file"
+        fi
+        wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o "$keyring_file"
+        echo "deb [signed-by=$keyring_file] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+        sudo apt-get update && sudo apt-get install -y nomad="1.6.2-1"
+      args:
+        executable: /bin/bash
+
+    - name: Create directory for NeuralDB Enterprise scripts
+      file:
+        path: /opt/neuraldb-enterprise/nomad_scripts
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+
+    - name: Copy NeuralDB Enterprise scripts to target machine
+      copy:
+        src: "files/nomad/nomad_scripts/"
+        dest: "/opt/neuraldb-enterprise/nomad_scripts/"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+
+- name: Setup and start Nomad server
+  hosts: all
+  become: yes
+  tasks:
+    - name: Start Nomad server on the designated node
+      block:
+        - name: Determine node pool and class
+          set_fact:
+            node_pool: >
+              {% if inventory_hostname == web_ingress.private_ip and web_ingress.web_ingress.run_jobs is not defined or web_ingress.web_ingress.run_jobs %}
+              default
+              {% else %}
+              web_ingress
+              {% endif %}
+            node_class: "{{ 'web_ingress' if inventory_hostname == web_ingress.private_ip else 'default' }}"
+
+        - name: Start Nomad server using tmux
+          shell: |
+            tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
+            tmux new-session -d -s nomad-agent 'cd /opt/neuraldb-enterprise; bash ./nomad_scripts/start_nomad_agent.sh true true {{ node_pool }} {{ node_class }} {{ inventory_hostname }} {{ inventory_hostname }} > head.log 2> head.err'
+          args:
+            executable: /bin/bash
+      when: inventory_hostname == shared_file_system_private_ip
+
+    - name: Bootstrap Nomad ACL system
+      shell: |
+        sudo mkdir -p /opt/neuraldb_enterprise/nomad_data
+        if [ ! -f "/opt/neuraldb_enterprise/nomad_data/management_token.txt" ]; then
+          sudo bash -c "nomad acl bootstrap > /opt/neuraldb_enterprise/nomad_data/management_token.txt 2>&1"
+        fi
+        management_token=$(grep 'Secret ID' "/opt/neuraldb_enterprise/nomad_data/management_token.txt"  | awk '{print $NF}')
+        cd /opt/neuraldb-enterprise
+        nomad acl policy apply -description "Task Runner policy" -token "$management_token" task-runner "/opt/neuraldb-enterprise/nomad_scripts/task_runner.policy.hcl"
+        nomad acl token create -name="Task Runner token" -policy=task-runner -type=client -token "$management_token" 2>&1 | sudo tee /opt/neuraldb_enterprise/nomad_data/task_runner_token.txt > /dev/null
+        task_runner_token=$(grep 'Secret ID' "/opt/neuraldb_enterprise/nomad_data/task_runner_token.txt"  | awk '{print $NF}')
+        nomad var put -namespace default -token "$management_token" -force nomad/jobs task_runner_token=$task_runner_token > /dev/null
+      args:
+        executable: /bin/bash
+      when: inventory_hostname == shared_file_system_private_ip
+
+- name: Start Nomad clients
+  hosts: all
+  become: yes
+  tasks:
+    - name: Start Nomad clients on non-server nodes
+      block:
+        - name: Determine node pool and class for clients
+          set_fact:
+            node_pool: >
+              {% if inventory_hostname == web_ingress.private_ip and web_ingress.web_ingress.run_jobs is not defined or web_ingress.web_ingress.run_jobs %}
+              default
+              {% else %}
+              web_ingress
+              {% endif %}
+            node_class: "{{ 'web_ingress' if inventory_hostname == web_ingress.private_ip else 'default' }}"
+
+        - name: Start Nomad client using tmux
+          shell: |
+            tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
+            tmux new-session -d -s nomad-agent 'cd /opt/neuraldb-enterprise; bash ./nomad_scripts/start_nomad_agent.sh false true {{ node_pool }} {{ node_class }} {{ shared_file_system_private_ip }} {{ inventory_hostname }} > head.log 2> head.err'
+          args:
+            executable: /bin/bash
+      when: inventory_hostname != shared_file_system_private_ip

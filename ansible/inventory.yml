@@ -1,0 +1,5 @@
+[web_ingress]
+50.18.43.92 ansible_user=ubuntu
+
+[nfs_clients]
+192.168.0.74 ansible_user=ubuntu
