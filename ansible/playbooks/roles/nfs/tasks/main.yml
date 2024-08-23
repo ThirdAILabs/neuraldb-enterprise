@@ -1,6 +1,10 @@
 ---
+- name: Debug - Print values for NFS directory creation
+  ansible.builtin.debug:
+    msg: "ansible_host: {{ ansible_host }}, shared_file_system_public_ip: {{ shared_file_system_public_ip }}"
+
 - name: Create NFS directories
-  when: inventory_hostname == shared_file_system_private_ip
+  when: ansible_host == shared_file_system_public_ip
   block:
     - name: Create NFS directories and set permissions
       ansible.builtin.file:
@@ -28,7 +32,7 @@
         - users
 
 - name: Install NFS server on the designated NFS server node
-  when: inventory_hostname == shared_file_system_private_ip and create_nfs_server
+  when: ansible_host == shared_file_system_public_ip and create_nfs_server
   block:
     - name: Install NFS server packages
       ansible.builtin.apt:
@@ -49,8 +53,9 @@
         recurse: true
       loop:
         - { entity: "root", etype: "user", permissions: "rwx" }
-        - { entity: "root", etype: "group", permissions: "rwx" }
-        - { entity: "root", etype: "other", permissions: "r" }
+        - { entity: "nomad_nfs", etype: "group", permissions: "rwx" }
+        - { entity: "", etype: "other", permissions: "r" }
+
 
     - name: Configure /etc/exports for NFS clients
       ansible.builtin.lineinfile:
@@ -71,7 +76,7 @@
         enabled: true
 
 - name: Install and configure NFS clients
-  when: inventory_hostname != shared_file_system_private_ip
+  when: ansible_host != shared_file_system_public_ip
   block:
     - name: Install NFS client packages
       ansible.builtin.apt:
@@ -79,11 +84,17 @@
         state: present
         update_cache: true
 
+    - name: Check if shared directory exists
+      ansible.builtin.stat:
+        path: "{{ shared_dir }}"
+      register: dir_exists
+
     - name: Create the shared directory on the client if it doesn't exist
       ansible.builtin.file:
         path: "{{ shared_dir }}"
         state: directory
-        mode: '0644'
+        mode: '0755'
+      when: not dir_exists.stat.exists
 
     - name: Mount the shared directory from NFS server
       ansible.posix.mount:

@@ -13,7 +13,7 @@
       loop:
         - "{{ sql_server_database_dir }}/docker-postgres-init"
         - "{{ sql_server_database_dir }}/data"
-      when: inventory_hostname == sql_server_private_ip
+      when: ansible_host == sql_server_public_ip
 
     - name: Create init-db.sh script
       ansible.builtin.copy:
@@ -29,19 +29,19 @@
         mode: '0755'
         owner: postgres
         group: postgres
-      when: inventory_hostname == sql_server_private_ip
+      when: ansible_host == sql_server_public_ip
 
     - name: Pull PostgreSQL Docker image
       community.docker.docker_image:
         name: postgres
         source: pull
-      when: inventory_hostname == sql_server_private_ip
+      when: ansible_host == sql_server_public_ip
 
     - name: Stop existing PostgreSQL container
       community.docker.docker_container:
         name: neuraldb-enterprise-postgresql-server
         state: absent
-      when: inventory_hostname == sql_server_private_ip
+      when: ansible_host == sql_server_public_ip
 
     - name: Run PostgreSQL container
       community.docker.docker_container:
@@ -58,7 +58,7 @@
           - "{{ sql_server_database_dir }}/data:/var/lib/postgresql/data"
         ports:
           - "5432:5432"
-      when: inventory_hostname == sql_server_private_ip
+      when: ansible_host == sql_server_public_ip
 
 - name: Determine SQL URI after PostgreSQL container setup
   ansible.builtin.set_fact:

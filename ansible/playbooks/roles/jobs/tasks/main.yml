@@ -21,7 +21,7 @@
   register: acl_token
   args:
     executable: /bin/bash
-  when: inventory_hostname == nomad_server_private_ip
+  when: ansible_host == nomad_server_private_ip
   changed_when: false
 
 - name: Define common variables for jobs
@@ -40,33 +40,40 @@
       GENAI_KEY={{ genai_key }}
       NDBE_VERSION={{ ndb_enterprise_version }}
 
-- name: Submit a Nomad job
-  when: inventory_hostname == nomad_server_private_ip
+- name: Submit Nomad jobs
+  when: ansible_host == nomad_server_private_ip
   block:
     - name: Replace placeholders in HCL file (OS-specific)
       ansible.builtin.shell: |
+        set -o pipefail
         temp_hcl_file=$(mktemp)
-        cp /opt/neuraldb_enterprise/nomad_jobs/{{ item.hcl_file }} $temp_hcl_file
+        cp /opt/neuraldb_enterprise/nomad_jobs/{{ item.hcl_file }} "$temp_hcl_file"
 
+        {% raw %}
         {% if ansible_os_family == 'Darwin' %}
         for var in {{ common_vars }}; do
           key=$(echo "$var" | cut -d '=' -f 1)
           value=$(echo "$var" | cut -d '=' -f 2)
-          sed -i '' "s|{{ $key }}|$value|g" "$temp_hcl_file"
+          sed -i '' "s|{{ '{{' }}$key{{ '}}' }}|$value|g" "$temp_hcl_file"
         done
         {% else %}
         for var in {{ common_vars }}; do
           key=$(echo "$var" | cut -d '=' -f 1)
           value=$(echo "$var" | cut -d '=' -f 2)
-          sed -i "s|{{ $key }}|$value|g" "$temp_hcl_file"
+          sed -i "s|{{ '{{' }}$key{{ '}}' }}|$value|g" "$temp_hcl_file"
         done
         {% endif %}
+        {% endraw %}
 
         echo "$temp_hcl_file"
       register: temp_hcl_file_path
       args:
         executable: /bin/bash
       changed_when: false
+      loop:
+        - hcl_file: "traefik_job.hcl.tpl"
+        - hcl_file: "model_bazaar_job.hcl.tpl"
+        - hcl_file: "nomad_autoscaler_job.hcl"
 
     - name: Submit job to Nomad
       ansible.builtin.shell: |
@@ -79,8 +86,3 @@
       args:
         executable: /bin/bash
       changed_when: false
-
-  loop:
-    - { hcl_file: "traefik_job.hcl.tpl" }
-    - { hcl_file: "model_bazaar_job.hcl.tpl" }
-    - { hcl_file: "nomad_autoscaler_job.hcl" }

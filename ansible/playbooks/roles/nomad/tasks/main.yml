@@ -41,7 +41,7 @@
 
 - name: Create directory for NeuralDB Enterprise scripts
   ansible.builtin.file:
-    path: /opt/neuraldb-enterprise/nomad_scripts
+    path: /opt/neuraldb_enterprise/nomad
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -49,29 +49,27 @@
 
 - name: Copy NeuralDB Enterprise scripts to target machine
   ansible.builtin.copy:
-    src: "files/nomad/nomad_scripts/"
-    dest: "/opt/neuraldb-enterprise/nomad_scripts/"
+    src: "files/nomad/"
+    dest: "/opt/neuraldb_enterprise/nomad/"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0755'
 
 - name: Start Nomad server on the designated node
-  when: inventory_hostname == shared_file_system_private_ip
+  when: ansible_host == nomad_server_public_ip
   block:
     - name: Determine node pool and class
       ansible.builtin.set_fact:
-        node_pool: >
-          {% if inventory_hostname == web_ingress.private_ip and web_ingress.web_ingress.run_jobs is not defined or web_ingress.web_ingress.run_jobs %}
-          default
-          {% else %}
-          web_ingress
-          {% endif %}
-        node_class: "{{ 'web_ingress' if inventory_hostname == web_ingress.private_ip else 'default' }}"
+        node_pool: >-
+          {% if ansible_host == web_ingress.public_ip and web_ingress.run_jobs is not defined or web_ingress.run_jobs %}default{% else %}web_ingress{% endif %}
+        node_class: "{{ 'web_ingress' if ansible_host == web_ingress.public_ip else 'default' }}"
+
 
     - name: Start Nomad server using tmux
       ansible.builtin.shell: |
+        set -o pipefail
         tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
-        tmux new-session -d -s nomad-agent 'cd /opt/neuraldb-enterprise; bash ./nomad_scripts/start_nomad_agent.sh true true {{ node_pool }} {{ node_class }} {{ inventory_hostname }} {{ inventory_hostname }} > head.log 2> head.err'
+        tmux new-session -d -s nomad-agent 'cd /opt/neuraldb_enterprise; bash nomad/nomad_scripts/start_nomad_agent.sh true true {{ node_pool }} {{ node_class }} {{ nomad_server_private_ip }} {{ nomad_server_private_ip }} > head.log 2> head.err'
       args:
         executable: /bin/bash
       changed_when: false
@@ -84,34 +82,30 @@
       sudo bash -c "nomad acl bootstrap > /opt/neuraldb_enterprise/nomad_data/management_token.txt 2>&1"
     fi
     management_token=$(grep 'Secret ID' "/opt/neuraldb_enterprise/nomad_data/management_token.txt"  | awk '{print $NF}')
-    cd /opt/neuraldb-enterprise
-    nomad acl policy apply -description "Task Runner policy" -token "$management_token" task-runner "/opt/neuraldb-enterprise/nomad_scripts/task_runner.policy.hcl"
+    cd /opt/neuraldb_enterprise
+    nomad acl policy apply -description "Task Runner policy" -token "$management_token" task-runner "/opt/neuraldb_enterprise/nomad/nomad_node_configs/task_runner.policy.hcl"
     nomad acl token create -name="Task Runner token" -policy=task-runner -type=client -token "$management_token" 2>&1 | sudo tee /opt/neuraldb_enterprise/nomad_data/task_runner_token.txt > /dev/null
     task_runner_token=$(grep 'Secret ID' "/opt/neuraldb_enterprise/nomad_data/task_runner_token.txt"  | awk '{print $NF}')
     nomad var put -namespace default -token "$management_token" -force nomad/jobs task_runner_token=$task_runner_token > /dev/null
   args:
     executable: /bin/bash
-  when: inventory_hostname == shared_file_system_private_ip
+  when: ansible_host == nomad_server_public_ip
   changed_when: false
 
 - name: Start Nomad clients on non-server nodes
-  when: inventory_hostname != shared_file_system_private_ip
+  when: ansible_host != nomad_server_public_ip
   block:
     - name: Determine node pool and class for clients
       ansible.builtin.set_fact:
-        node_pool: >
-          {% if inventory_hostname == web_ingress.private_ip and web_ingress.web_ingress.run_jobs is not defined or web_ingress.web_ingress.run_jobs %}
-          default
-          {% else %}
-          web_ingress
-          {% endif %}
-        node_class: "{{ 'web_ingress' if inventory_hostname == web_ingress.private_ip else 'default' }}"
+        node_pool: >-
+          {% if ansible_host == web_ingress.public_ip and web_ingress.run_jobs is not defined or web_ingress.run_jobs %}default{% else %}web_ingress{% endif %}
+        node_class: "{{ 'web_ingress' if ansible_host == web_ingress.public_ip else 'default' }}"
 
     - name: Start Nomad client using tmux
       ansible.builtin.shell: |
         set -o pipefail
         tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
-        tmux new-session -d -s nomad-agent 'cd /opt/neuraldb-enterprise; bash ./nomad_scripts/start_nomad_agent.sh false true {{ node_pool }} {{ node_class }} {{ shared_file_system_private_ip }} {{ inventory_hostname }} > head.log 2> head.err'
+        tmux new-session -d -s nomad-agent 'cd /opt/neuraldb_enterprise; bash nomad/nomad_scripts/start_nomad_agent.sh false true {{ node_pool }} {{ node_class }} {{ nomad_server_private_ip }} {{ ansible_host }} > head.log 2> head.err'
       args:
         executable: /bin/bash
       changed_when: false

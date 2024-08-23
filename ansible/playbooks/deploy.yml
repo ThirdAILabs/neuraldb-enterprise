@@ -16,7 +16,8 @@
     autoscaling_enabled: false
     autoscaler_max_count: 1
 
-    shared_file_system_private_ip: "50.18.43.92"
+    shared_file_system_public_ip: "50.18.43.92"
+    shared_file_system_private_ip: "192.168.0.127"
     shared_dir: "/opt/neuraldb_enterprise/model_bazaar"
     web_ingress:
       private_ip: "192.168.0.127"
@@ -28,8 +29,12 @@
       - private_ip: "192.168.0.74"
     node_ssh_username: "ubuntu"
 
+
+    nomad_server_public_ip: "50.18.43.92"
+    nomad_server_private_ip: "192.168.0.127"
     # Hardcoded facts for SQL server
     self_hosted_sql_server: true
+    sql_server_public_ip: "50.18.43.92"
     sql_server_private_ip: "192.168.0.127"
     sql_server_database_dir: "/opt/neuraldb_enterprise/database"
     sql_server_database_password: "password"
@@ -38,9 +43,9 @@
     sql_uri: "postgresql://modelbazaaruser:password@192.168.0.127:5432/modelbazaar"
 
   roles:
-    - common
-    - nfs
-    - license
+    # - common
+    # - nfs
+    # - license
     - nomad
     - postgresql
     - certs
