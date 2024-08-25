@@ -3,6 +3,12 @@
   ansible.builtin.debug:
     msg: "ansible_host: {{ ansible_host }}, shared_file_system_public_ip: {{ shared_file_system_public_ip }}"
 
+- name: Ensure nomad_nfs group exists
+  when: ansible_host == shared_file_system_public_ip
+  ansible.builtin.group:
+    name: nomad_nfs
+    state: present
+
 - name: Create NFS directories
   when: ansible_host == shared_file_system_public_ip
   block:

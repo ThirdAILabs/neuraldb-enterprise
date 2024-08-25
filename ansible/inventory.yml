@@ -1,11 +1,11 @@
 all:
   hosts:
     nomad_server:
-      ansible_host: 50.18.43.92
+      ansible_host: 54.176.129.2
       ansible_user: ubuntu
       ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
     nomad_client:
       ansible_host: 192.168.0.74
       ansible_user: ubuntu
-      ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p ubuntu@50.18.43.92" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+      ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p ubuntu@54.176.129.2" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'

@@ -4,16 +4,6 @@
     state: directory
     mode: '0755'
 
-- name: Copy Nomad job templates to the remote machine
-  ansible.builtin.copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    mode: '0644'
-  loop:
-    - { src: "{{ playbook_dir }}/../files/nomad/nomad_jobs/traefik_job.hcl.tpl", dest: "/opt/neuraldb_enterprise/nomad_jobs/traefik_job.hcl.tpl" }
-    - { src: "{{ playbook_dir }}/../files/nomad/nomad_jobs/model_bazaar_job.hcl.tpl", dest: "/opt/neuraldb_enterprise/nomad_jobs/model_bazaar_job.hcl.tpl" }
-    - { src: "{{ playbook_dir }}/../files/nomad/nomad_jobs/nomad_autoscaler_job.hcl", dest: "/opt/neuraldb_enterprise/nomad_jobs/nomad_autoscaler_job.hcl" }
-
 - name: Retrieve the Nomad ACL token
   ansible.builtin.shell: |
     set -o pipefail
@@ -21,68 +11,106 @@
   register: acl_token
   args:
     executable: /bin/bash
-  when: ansible_host == nomad_server_private_ip
+  when: ansible_host == nomad_server_public_ip
   changed_when: false
 
-- name: Define common variables for jobs
+- name: Start Nomad server on the designated node
+  block:
+    - name: Determine node pool and class
+      ansible.builtin.set_fact:
+        node_pool: >-
+          {% if ansible_host == web_ingress.public_ip and web_ingress.run_jobs is not defined or web_ingress.run_jobs %}default{% else %}web_ingress{% endif %}
+        node_class: "{{ 'web_ingress' if ansible_host == web_ingress.public_ip else 'default' }}"
+
+- name: Gather and set common variables on localhost
   ansible.builtin.set_fact:
-    common_vars: |
-      PRIVATE_SERVER_IP={{ nomad_server_private_ip }}
-      NODE_POOL={{ node_pool }}
-      SHARE_DIR={{ shared_dir }}
-      PUBLIC_SERVER_IP={{ web_ingress_public_ip }}
-      JWT_SECRET={{ jwt_secret }}
-      ADMIN_USERNAME={{ admin_username }}
-      ADMIN_MAIL={{ admin_mail }}
-      ADMIN_PASSWORD={{ admin_password }}
-      AUTOSCALING_ENABLED={{ autoscaling_enabled }}
-      AUTOSCALER_MAX_COUNT={{ autoscaler_max_count }}
-      GENAI_KEY={{ genai_key }}
-      NDBE_VERSION={{ ndb_enterprise_version }}
+    PRIVATE_SERVER_IP: "{{ nomad_server_private_ip }}"
+    NODE_POOL: "{{ node_pool }}"
+    SHARE_DIR: "{{ shared_dir }}"
+    PUBLIC_SERVER_IP: "{{ web_ingress.public_ip }}"
+    JWT_SECRET: "{{ jwt_secret }}"
+    ADMIN_USERNAME: "{{ admin_username }}"
+    ADMIN_MAIL: "{{ admin_mail }}"
+    ADMIN_PASSWORD: "{{ admin_password }}"
+    AUTOSCALING_ENABLED: "{{ autoscaling_enabled }}"
+    AUTOSCALER_MAX_COUNT: "{{ autoscaler_max_count }}"
+    GENAI_KEY: "{{ genai_key }}"
+    NDBE_VERSION: "{{ ndb_enterprise_version }}"
+    #TODO(pratik): should be read through sql_uri
+    DATABASE_URI:  "postgresql://modelbazaaruser:{{ sql_server_database_password }}@{{ sql_server_private_ip }}:5432/modelbazaar"
+
 
 - name: Submit Nomad jobs
-  when: ansible_host == nomad_server_private_ip
+  when: ansible_host == nomad_server_public_ip
   block:
-    - name: Replace placeholders in HCL file (OS-specific)
-      ansible.builtin.shell: |
-        set -o pipefail
-        temp_hcl_file=$(mktemp)
-        cp /opt/neuraldb_enterprise/nomad_jobs/{{ item.hcl_file }} "$temp_hcl_file"
-
-        {% raw %}
-        {% if ansible_os_family == 'Darwin' %}
-        for var in {{ common_vars }}; do
-          key=$(echo "$var" | cut -d '=' -f 1)
-          value=$(echo "$var" | cut -d '=' -f 2)
-          sed -i '' "s|{{ '{{' }}$key{{ '}}' }}|$value|g" "$temp_hcl_file"
-        done
-        {% else %}
-        for var in {{ common_vars }}; do
-          key=$(echo "$var" | cut -d '=' -f 1)
-          value=$(echo "$var" | cut -d '=' -f 2)
-          sed -i "s|{{ '{{' }}$key{{ '}}' }}|$value|g" "$temp_hcl_file"
-        done
-        {% endif %}
-        {% endraw %}
-
-        echo "$temp_hcl_file"
-      register: temp_hcl_file_path
-      args:
-        executable: /bin/bash
-      changed_when: false
+    - name: Generate HCL file from template
+      ansible.builtin.template:
+        src: "files/nomad/nomad_jobs/{{ item.hcl_file }}.tpl"
+        dest: "/tmp/{{ item.hcl_file }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
       loop:
-        - hcl_file: "traefik_job.hcl.tpl"
-        - hcl_file: "model_bazaar_job.hcl.tpl"
-        - hcl_file: "nomad_autoscaler_job.hcl"
+        - hcl_file: "traefik_job.hcl"
+        - hcl_file: "model_bazaar_job.hcl"
 
-    - name: Submit job to Nomad
-      ansible.builtin.shell: |
-        hcl_content=$(cat {{ temp_hcl_file_path.stdout }})
-        hcl_payload=$(jq -n --arg hcl "$hcl_content" '{JobHCL: $hcl, Canonicalize: true}')
-        json_payload=$(curl -s -X POST -H "Content-Type: application/json" -H "X-Nomad-Token: {{ acl_token.stdout }}" -d "$hcl_payload" "http://localhost:4646/v1/jobs/parse")
-        response=$(curl -s -X POST -H "Content-Type: application/json" -H "X-Nomad-Token: {{ acl_token.stdout }}" -d "{\"Job\":$json_payload}" "http://localhost:4646/v1/jobs")
-        echo $response
-        rm "{{ temp_hcl_file_path.stdout }}"
-      args:
-        executable: /bin/bash
-      changed_when: false
+    - name: Copy nomad_autoscaler_job.hcl without templating
+      ansible.builtin.copy:
+        src: "files/nomad/nomad_jobs/nomad_autoscaler_job.hcl"
+        dest: "/tmp/nomad_autoscaler_job.hcl"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+
+    - name: Slurp HCL files from nomad_server
+      ansible.builtin.slurp:
+        src: "{{ item }}"
+      loop:
+        - "/tmp/traefik_job.hcl"
+        - "/tmp/model_bazaar_job.hcl"
+        - "/tmp/nomad_autoscaler_job.hcl"
+      register: slurped_files
+
+    - name: Debug JSON to be sent to Nomad
+      ansible.builtin.debug:
+        msg: "{{ {'JobHCL': item.content | b64decode, 'Canonicalize': true} | to_json }}"
+      loop: "{{ slurped_files.results }}"
+
+
+    - name: Parse Nomad job HCL to JSON
+      ansible.builtin.uri:
+        url: "http://localhost:4646/v1/jobs/parse"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+          X-Nomad-Token: "{{ acl_token.stdout }}"
+        body: "{{ {'JobHCL': item.content | b64decode, 'Canonicalize': true} | to_json }}"
+        body_format: json
+        return_content: true
+      loop: "{{ slurped_files.results }}"
+      register: parsed_jobs
+
+
+    - name: Submit parsed Nomad job to server
+      ansible.builtin.uri:
+        url: "http://localhost:4646/v1/jobs"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+          X-Nomad-Token: "{{ acl_token.stdout }}"
+        body: "{{ {'Job': item.json} | to_nice_json }}"
+        body_format: json
+        return_content: true
+      loop: "{{ parsed_jobs.results }}"
+      register: job_submission_responses
+
+    - name: Cleanup temporary HCL files
+      ansible.builtin.file:
+        path: "/tmp/{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/traefik_job.hcl"
+        - "/tmp/model_bazaar_job.hcl"
+        - "/tmp/nomad_autoscaler_job.hcl"
+
+

@@ -45,9 +45,11 @@ job "traefik" {
         env = true
         change_mode = "restart"
         data = <<EOF
+{% raw %}
 {{- with nomadVar "nomad/jobs" -}}
 TASK_RUNNER_TOKEN = {{ .task_runner_token }}
 {{- end -}}
+{% endraw %}
 EOF
       }
 

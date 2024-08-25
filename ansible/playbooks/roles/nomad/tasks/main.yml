@@ -74,7 +74,12 @@
         executable: /bin/bash
       changed_when: false
 
+- name: Pause for 20 seconds to ensure Nomad server starts properly
+  ansible.builtin.pause:
+    seconds: 20
+
 - name: Bootstrap Nomad ACL system
+  when: ansible_host == nomad_server_public_ip
   ansible.builtin.shell: |
     set -o pipefail
     sudo mkdir -p /opt/neuraldb_enterprise/nomad_data
@@ -89,8 +94,6 @@
     nomad var put -namespace default -token "$management_token" -force nomad/jobs task_runner_token=$task_runner_token > /dev/null
   args:
     executable: /bin/bash
-  when: ansible_host == nomad_server_public_ip
-  changed_when: false
 
 - name: Start Nomad clients on non-server nodes
   when: ansible_host != nomad_server_public_ip

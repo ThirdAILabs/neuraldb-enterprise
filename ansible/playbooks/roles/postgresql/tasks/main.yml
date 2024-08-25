@@ -2,18 +2,31 @@
 - name: Set up PostgreSQL if self-hosted
   when: self_hosted_sql_server
   block:
+    - name: Ensure postgres group exists
+      when: ansible_host == sql_server_public_ip
+      ansible.builtin.group:
+        name: postgres
+        state: presentp
+
+    - name: Ensure postgres user exists
+      when: ansible_host == sql_server_public_ip
+      ansible.builtin.user:
+        name: postgres
+        group: postgres
+        state: present
+
     - name: Create necessary directories on SQL server
+      when: ansible_host == sql_server_public_ip
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
         mode: '0644'
-        # do we actually need it?
         owner: postgres
         group: postgres
       loop:
         - "{{ sql_server_database_dir }}/docker-postgres-init"
         - "{{ sql_server_database_dir }}/data"
-      when: ansible_host == sql_server_public_ip
+
 
     - name: Create init-db.sh script
       ansible.builtin.copy:
@@ -76,6 +89,7 @@
       register: nomad_management_token
       args:
         executable: /bin/bash
+      when: ansible_host == nomad_server_public_ip
       changed_when: false
 
     - name: Update Nomad variable with ENV-based SQL URI
@@ -87,6 +101,7 @@
       args:
         executable: /bin/bash
       changed_when: false
+      when: ansible_host == nomad_server_public_ip
 
 - name: Update Nomad with the determined SQL URI
   ansible.builtin.shell: |
@@ -97,4 +112,5 @@
   args:
     executable: /bin/bash
   changed_when: false
-  when: sql_uri != "ENV"
+  when: sql_uri != "ENV" and ansible_host == nomad_server_public_ip
+

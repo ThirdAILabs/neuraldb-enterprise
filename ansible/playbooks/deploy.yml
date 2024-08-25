@@ -16,12 +16,12 @@
     autoscaling_enabled: false
     autoscaler_max_count: 1
 
-    shared_file_system_public_ip: "50.18.43.92"
+    shared_file_system_public_ip: "54.176.129.2"
     shared_file_system_private_ip: "192.168.0.127"
     shared_dir: "/opt/neuraldb_enterprise/model_bazaar"
     web_ingress:
       private_ip: "192.168.0.127"
-      public_ip: "50.18.43.92"
+      public_ip: "54.176.129.2"
       run_jobs: true
       ssh_username: "ubuntu"
     create_nfs_server: true
@@ -30,11 +30,11 @@
     node_ssh_username: "ubuntu"
 
 
-    nomad_server_public_ip: "50.18.43.92"
+    nomad_server_public_ip: "54.176.129.2"
     nomad_server_private_ip: "192.168.0.127"
     # Hardcoded facts for SQL server
     self_hosted_sql_server: true
-    sql_server_public_ip: "50.18.43.92"
+    sql_server_public_ip: "54.176.129.2"
     sql_server_private_ip: "192.168.0.127"
     sql_server_database_dir: "/opt/neuraldb_enterprise/database"
     sql_server_database_password: "password"
@@ -46,7 +46,7 @@
     # - common
     # - nfs
     # - license
-    - nomad
-    - postgresql
-    - certs
+    # - nomad
+    # - postgresql
+    # - certs
     - jobs

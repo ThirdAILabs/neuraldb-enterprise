@@ -33,10 +33,11 @@ job "modelbazaar" {
         env         = true
         change_mode = "restart"
         data        = <<EOF
+{% raw %}
 {{- with nomadVar "nomad/jobs" -}}
 TASK_RUNNER_TOKEN = {{ .task_runner_token }}
-DATABASE_URI = {{ .sql_uri }}
 {{- end -}}
+{% endraw %}
 EOF
       }
 
@@ -55,7 +56,7 @@ EOF
         GENAI_KEY = "{{ GENAI_KEY }}"
 
         TASK_RUNNER_TOKEN = "${TASK_RUNNER_TOKEN}"
-        DATABASE_URI = "${DATABASE_URI}"
+        DATABASE_URI = "postgresql://modelbazaaruser:password@192.168.0.127:5432/modelbazaar"
       }
 
       config {
