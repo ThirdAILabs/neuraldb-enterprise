@@ -6,7 +6,7 @@
       when: ansible_host == sql_server_public_ip
       ansible.builtin.group:
         name: postgres
-        state: presentp
+        state: present
 
     - name: Ensure postgres user exists
       when: ansible_host == sql_server_public_ip

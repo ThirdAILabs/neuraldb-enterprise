@@ -43,10 +43,10 @@
     sql_uri: "postgresql://modelbazaaruser:password@192.168.0.127:5432/modelbazaar"
 
   roles:
-    # - common
-    # - nfs
-    # - license
-    # - nomad
-    # - postgresql
-    # - certs
+    - common
+    - nfs
+    - license
+    - nomad
+    - postgresql
+    - certs
     - jobs
