@@ -82,7 +82,7 @@
         enabled: true
 
 - name: Install and configure NFS clients
-  when: ansible_host != shared_file_system.private_ip
+  when: ansible_host_private_ip != shared_file_system.private_ip
   block:
     - name: Install NFS client packages
       ansible.builtin.apt:

@@ -24,7 +24,7 @@
   gather_facts: false
   become: true
 
-  tasks:
+  pre_tasks:
     - name: Load variables from external file
       include_vars: "{{ config_path }}"
 
