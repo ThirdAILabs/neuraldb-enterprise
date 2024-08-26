@@ -60,7 +60,6 @@
           private_ip: "{{ item.private_ip }}"
           database_dir: "{{ item.roles.sql_server.database_dir }}"
           database_password: "{{ item.roles.sql_server.database_password }}"
-          sql_uri: "postgresql://modelbazaaruser:{{ item.roles.sql_server.database_password }}@{{ item.private_ip }}/modelbazaar"
       when: "'sql_server' in item.roles"
       loop: "{{ nodes }}"
 
