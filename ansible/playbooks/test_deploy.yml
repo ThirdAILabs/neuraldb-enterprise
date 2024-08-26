@@ -1,0 +1,98 @@
+---
+- name: Deploy NeuralDB Enterprise
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Load variables from external file
+      include_vars: "{{ config_path }}"
+
+    - name: Set up inventory dynamically and define variables for remote execution
+      add_host:
+        name: "{{ node.name }}"
+        ansible_host: "{% if 'web_ingress' in node.roles %}{{ node.public_ip }}{% else %}{{ node.private_ip }}{% endif %}"
+        ansible_user: "{{ node.ssh_username }}"
+        ansible_ssh_common_args: "{{ node.ansible_ssh_common_args | default('') }}"
+      loop: "{{ nodes }}"
+      loop_control:
+        loop_var: node
+
+- name: Execute Roles on Remote Hosts
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Load variables from external file
+      include_vars: "{{ config_path }}"
+
+    - name: Set up web_ingress variable
+      set_fact:
+        web_ingress: 
+          private_ip: "{{ item.private_ip }}"
+          public_ip: "{{ item.public_ip }}"
+          run_jobs: "{{ item.roles.web_ingress.run_jobs }}"
+          ssh_username: "{{ item.ssh_username }}"
+      when: "'web_ingress' in item.roles"
+      loop:
+      loop: "{{ nodes }}"
+
+    - name: Set up shared_file_system variable
+      set_fact:
+        shared_file_system:
+          public_ip: "{{ item.public_ip }}"
+          private_ip: "{{ item.private_ip }}"
+          shared_dir: "{{ item.roles.shared_file_system.shared_dir }}"
+      when: "'shared_file_system' in item.roles"
+      loop: "{{ nodes }}"
+
+    - name: Set up nomad_server variable
+      set_fact:
+        nomad_server:
+          public_ip: "{{ item.public_ip }}"
+          private_ip: "{{ item.private_ip }}"
+      when: "'nomad_server' in item.roles"
+      loop: "{{ nodes }}"
+
+    - name: Set up sql_server variable
+      set_fact:
+        sql_server:
+          public_ip: "{{ item.public_ip }}"
+          private_ip: "{{ item.private_ip }}"
+          database_dir: "{{ item.roles.sql_server.database_dir }}"
+          database_password: "{{ item.roles.sql_server.database_password }}"
+          sql_uri: "postgresql://modelbazaaruser:{{ item.roles.sql_server.database_password }}@{{ item.private_ip }}/modelbazaar"
+      when: "'sql_server' in item.roles"
+      loop: "{{ nodes }}"
+
+    - name: Set up nfs_clients variable
+      set_fact:
+        nfs_clients: "{{ nfs_clients | default([]) + [{'private_ip': item.private_ip}] }}"
+      when: "'shared_file_system' not in item.roles"
+      loop: "{{ nodes }}"
+
+    - name: Set up sql_clients variable
+      set_fact:
+        sql_clients: "{{ sql_clients | default([]) + [{'private_ip': item.private_ip}] }}"
+      when: "'sql_server' not in item.roles"
+      loop: "{{ nodes }}"
+    
+    - name: Debug to see all set variables
+      debug:
+        msg:
+          - "shared_file_system: {{ shared_file_system }}"
+          - "web_ingress: {{ web_ingress }}"
+          - "nomad_server: {{ nomad_server }}"
+          - "sql_server: {{ sql_server }}"
+          - "nfs_clients: {{ nfs_clients }}"
+          - "sql_clients: {{ sql_clients }}"
+
+  # roles:
+  #   - common
+  #   - nfs
+  #   - license
+  #   - nomad
+  #   - postgresql
+  #   - certs
+  #   - jobs

@@ -1,0 +1,33 @@
+# config.yml
+license_path: "/Users/pratikqpranav/Downloads/ndb_enterprise_license.json"
+jwt_secret: "1234"
+admin_mail: "admin@mail.com"
+admin_username: "admin"
+admin_password: "password"
+genai_key: "open-ai-api-key"
+ndb_enterprise_version: "latest"
+autoscaling_enabled: false
+autoscaler_max_count: 1
+
+nodes:
+  - name: node1
+    public_ip: "54.176.129.2"
+    private_ip: "192.168.0.127"
+    ssh_username: "ubuntu"
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    roles:
+      nomad_server: true
+      web_ingress:
+        run_jobs: true
+      sql_server:
+        database_dir: "/opt/neuraldb_enterprise/database"
+        database_password: "password"
+      shared_file_system:
+        shared_dir: "/opt/neuraldb_enterprise/model_bazaar"
+
+  - name: node2
+    public_ip: "192.168.0.74"
+    private_ip: "192.168.0.74"
+    ssh_username: "ubuntu"
+    ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p ubuntu@54.176.129.2" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    roles: []
