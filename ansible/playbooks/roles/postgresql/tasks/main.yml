@@ -3,20 +3,20 @@
   when: self_hosted_sql_server
   block:
     - name: Ensure postgres group exists
-      when: ansible_host == sql_server_public_ip
+      when: ansible_host_private_ip == sql_server.private_ip
       ansible.builtin.group:
         name: postgres
         state: present
 
     - name: Ensure postgres user exists
-      when: ansible_host == sql_server_public_ip
+      when: ansible_host_private_ip == sql_server.private_ip
       ansible.builtin.user:
         name: postgres
         group: postgres
         state: present
 
     - name: Create necessary directories on SQL server
-      when: ansible_host == sql_server_public_ip
+      when: ansible_host_private_ip == sql_server.private_ip
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
@@ -24,8 +24,8 @@
         owner: postgres
         group: postgres
       loop:
-        - "{{ sql_server_database_dir }}/docker-postgres-init"
-        - "{{ sql_server_database_dir }}/data"
+        - "{{ sql_server.database_dir }}/docker-postgres-init"
+        - "{{ sql_server.database_dir }}/data"
 
 
     - name: Create init-db.sh script
@@ -34,27 +34,27 @@
           #!/bin/bash
           {
               echo "host  all all 172.17.0.0/16  md5"
-              {% for IP in sql_client_private_ips %}
+              {% for IP in sql_clients %}
               echo "host  all all {{ IP }}/32  md5"
               {% endfor %}
           } >> "$PGDATA/pg_hba.conf"
-        dest: "{{ sql_server_database_dir }}/docker-postgres-init/init-db.sh"
+        dest: "{{ sql_server.database_dir }}/docker-postgres-init/init-db.sh"
         mode: '0755'
         owner: postgres
         group: postgres
-      when: ansible_host == sql_server_public_ip
+      when: ansible_host_private_ip == sql_server.private_ip
 
     - name: Pull PostgreSQL Docker image
       community.docker.docker_image:
         name: postgres
         source: pull
-      when: ansible_host == sql_server_public_ip
+      when: ansible_host_private_ip == sql_server.private_ip
 
     - name: Stop existing PostgreSQL container
       community.docker.docker_container:
         name: neuraldb-enterprise-postgresql-server
         state: absent
-      when: ansible_host == sql_server_public_ip
+      when: ansible_host_private_ip == sql_server.private_ip
 
     - name: Run PostgreSQL container
       community.docker.docker_container:
@@ -63,19 +63,19 @@
         state: started
         restart_policy: always
         env:
-          POSTGRES_PASSWORD: "{{ sql_server_database_password }}"
+          POSTGRES_PASSWORD: "{{ sql_server.database_password }}"
           POSTGRES_DB: modelbazaar
           POSTGRES_USER: modelbazaaruser
         volumes:
-          - "{{ sql_server_database_dir }}/docker-postgres-init:/docker-entrypoint-initdb.d"
-          - "{{ sql_server_database_dir }}/data:/var/lib/postgresql/data"
+          - "{{ sql_server.database_dir }}/docker-postgres-init:/docker-entrypoint-initdb.d"
+          - "{{ sql_server.database_dir }}/data:/var/lib/postgresql/data"
         ports:
           - "5432:5432"
-      when: ansible_host == sql_server_public_ip
+      when: ansible_host_private_ip == sql_server.private_ip
 
 - name: Determine SQL URI after PostgreSQL container setup
   ansible.builtin.set_fact:
-    sql_uri: "postgresql://modelbazaaruser:{{ sql_server_database_password }}@{{ sql_server_private_ip }}:5432/modelbazaar"
+    sql_uri: "postgresql://modelbazaaruser:{{ sql_server.database_password }}@{{ sql_server.private_ip }}:5432/modelbazaar"
   when: self_hosted_sql_server
 
 - name: Generate SQL URI if using ENV
@@ -89,7 +89,7 @@
       register: nomad_management_token
       args:
         executable: /bin/bash
-      when: ansible_host == nomad_server_public_ip
+      when: ansible_host_private_ip == nomad_server.private_ip
       changed_when: false
 
     - name: Update Nomad variable with ENV-based SQL URI
@@ -101,7 +101,7 @@
       args:
         executable: /bin/bash
       changed_when: false
-      when: ansible_host == nomad_server_public_ip
+      when: ansible_host_private_ip == nomad_server.private_ip
 
 - name: Update Nomad with the determined SQL URI
   ansible.builtin.shell: |
@@ -112,5 +112,5 @@
   args:
     executable: /bin/bash
   changed_when: false
-  when: sql_uri != "ENV" and ansible_host == nomad_server_public_ip
+  when: sql_uri != "ENV" and ansible_host_private_ip == nomad_server.private_ip
 

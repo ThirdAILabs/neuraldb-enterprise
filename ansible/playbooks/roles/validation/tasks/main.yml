@@ -48,21 +48,21 @@
 - name: Write node status to NFS
   ansible.builtin.shell: |
     set -o pipefail
-    echo "{{ ansible_host }} | success" | sudo tee -a {{ shared_dir }}/node_status
+    echo "{{ ansible_host }} | success" | sudo tee -a {{ shared_file_system.shared_dir }}/node_status
   changed_when: false
   tags: node_status_write
 
 - name: Verify NFS status on all nodes
   ansible.builtin.shell: |
     set -o pipefail
-    grep -q '{{ ansible_host }} | success' {{ shared_dir }}/node_status && echo "{{ ansible_host }} | success" || echo "{{ ansible_host }} | failed"
+    grep -q '{{ ansible_host }} | success' {{ shared_file_system.shared_dir }}/node_status && echo "{{ ansible_host }} | success" || echo "{{ ansible_host }} | failed"
   register: nfs_status_check
   failed_when: "'failed' in nfs_status_check.stdout"
   changed_when: false
   tags: nfs_status_check
 
 - name: Clean up status file on NFS
-  ansible.builtin.command: sudo rm -f {{ shared_dir }}/node_status
+  ansible.builtin.command: sudo rm -f {{ shared_file_system.shared_dir }}/node_status
   changed_when: true
   tags: cleanup
   when: ansible_play_hosts[-1] == ansible_host  # Cleanup only after all nodes are validated

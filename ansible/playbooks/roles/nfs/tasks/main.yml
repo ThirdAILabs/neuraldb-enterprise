@@ -1,20 +1,20 @@
 ---
 - name: Debug - Print values for NFS directory creation
   ansible.builtin.debug:
-    msg: "ansible_host: {{ ansible_host }}, shared_file_system_public_ip: {{ shared_file_system_public_ip }}"
+    msg: "ansible_host: {{ ansible_host }}, shared_file_system.private_ip: {{ shared_file_system.private_ip }}"
 
 - name: Ensure nomad_nfs group exists
-  when: ansible_host == shared_file_system_public_ip
+  when: ansible_host_private_ip == shared_file_system.private_ip
   ansible.builtin.group:
     name: nomad_nfs
     state: present
 
 - name: Create NFS directories
-  when: ansible_host == shared_file_system_public_ip
+  when: ansible_host_private_ip == shared_file_system.private_ip
   block:
     - name: Create NFS directories and set permissions
       ansible.builtin.file:
-        path: "{{ shared_dir }}/{{ item.path }}"
+        path: "{{ shared_file_system.shared_dir }}/{{ item.path }}"
         state: directory
         mode: '{{ item.mode }}'
         owner: root
@@ -27,7 +27,7 @@
 
     - name: Set group sticky bit on NFS shared directories
       ansible.builtin.file:
-        path: "{{ shared_dir }}/{{ item }}"
+        path: "{{ shared_file_system.shared_dir }}/{{ item }}"
         mode: g+s
         owner: root
         group: nomad_nfs
@@ -38,7 +38,7 @@
         - users
 
 - name: Install NFS server on the designated NFS server node
-  when: ansible_host == shared_file_system_public_ip and create_nfs_server
+  when: ansible_host_private_ip == shared_file_system.private_ip and create_nfs_server
   block:
     - name: Install NFS server packages
       ansible.builtin.apt:
@@ -50,7 +50,7 @@
 
     - name: Set default ACLs on NFS shared directories
       ansible.posix.acl:
-        path: "{{ shared_dir }}"
+        path: "{{ shared_file_system.shared_dir }}"
         entity: "{{ item.entity }}"
         etype: "{{ item.etype }}"
         permissions: "{{ item.permissions }}"
@@ -66,7 +66,7 @@
     - name: Configure /etc/exports for NFS clients
       ansible.builtin.lineinfile:
         path: /etc/exports
-        line: "{{ shared_dir }} {{ item.private_ip }}(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"
+        line: "{{ shared_file_system.shared_dir }} {{ item.private_ip }}(rw,sync,no_subtree_check,all_squash,anonuid=4646,anongid=4646)"
         create: true
         mode: '0644'
       loop: "{{ nfs_clients }}"
@@ -82,7 +82,7 @@
         enabled: true
 
 - name: Install and configure NFS clients
-  when: ansible_host != shared_file_system_public_ip
+  when: ansible_host != shared_file_system.private_ip
   block:
     - name: Install NFS client packages
       ansible.builtin.apt:
@@ -92,20 +92,20 @@
 
     - name: Check if shared directory exists
       ansible.builtin.stat:
-        path: "{{ shared_dir }}"
+        path: "{{ shared_file_system.shared_dir }}"
       register: dir_exists
 
     - name: Create the shared directory on the client if it doesn't exist
       ansible.builtin.file:
-        path: "{{ shared_dir }}"
+        path: "{{ shared_file_system.shared_dir }}"
         state: directory
         mode: '0755'
       when: not dir_exists.stat.exists
 
     - name: Mount the shared directory from NFS server
       ansible.posix.mount:
-        path: "{{ shared_dir }}"
-        src: "{{ shared_file_system_private_ip }}:{{ shared_dir }}"
+        path: "{{ shared_file_system.shared_dir }}"
+        src: "{{ shared_file_system.private_ip }}:{{ shared_file_system.shared_dir }}"
         fstype: nfs
         opts: rw,hard,intr
         state: mounted
@@ -113,6 +113,6 @@
     - name: Ensure the NFS mount is persistent in fstab
       ansible.builtin.lineinfile:
         path: /etc/fstab
-        line: "{{ shared_file_system_private_ip }}:{{ shared_dir }} {{ shared_dir }} nfs rw,hard,intr 0 0"
+        line: "{{ shared_file_system.private_ip }}:{{ shared_file_system.shared_dir }} {{ shared_file_system.shared_dir }} nfs rw,hard,intr 0 0"
         create: true
         mode: '0644'

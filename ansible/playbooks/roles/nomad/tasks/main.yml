@@ -56,20 +56,20 @@
     mode: '0755'
 
 - name: Start Nomad server on the designated node
-  when: ansible_host == nomad_server_public_ip
+  when: ansible_host_private_ip == nomad_server.private_ip
   block:
     - name: Determine node pool and class
       ansible.builtin.set_fact:
         node_pool: >-
-          {% if ansible_host == web_ingress.public_ip and web_ingress.run_jobs is not defined or web_ingress.run_jobs %}default{% else %}web_ingress{% endif %}
-        node_class: "{{ 'web_ingress' if ansible_host == web_ingress.public_ip else 'default' }}"
+          {% if ansible_host_private_ip == web_ingress.private_ip and web_ingress.run_jobs is not defined or web_ingress.run_jobs %}default{% else %}web_ingress{% endif %}
+        node_class: "{{ 'web_ingress' if ansible_host_private_ip == web_ingress.private_ip else 'default' }}"
 
 
     - name: Start Nomad server using tmux
       ansible.builtin.shell: |
         set -o pipefail
         tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
-        tmux new-session -d -s nomad-agent 'cd /opt/neuraldb_enterprise; bash nomad/nomad_scripts/start_nomad_agent.sh true true {{ node_pool }} {{ node_class }} {{ nomad_server_private_ip }} {{ nomad_server_private_ip }} > head.log 2> head.err'
+        tmux new-session -d -s nomad-agent 'cd /opt/neuraldb_enterprise; bash nomad/nomad_scripts/start_nomad_agent.sh true true {{ node_pool }} {{ node_class }} {{ nomad_server.private_ip }} {{ nomad_server.private_ip }} > head.log 2> head.err'
       args:
         executable: /bin/bash
       changed_when: false
@@ -79,7 +79,7 @@
     seconds: 20
 
 - name: Bootstrap Nomad ACL system
-  when: ansible_host == nomad_server_public_ip
+  when: ansible_host_private_ip == nomad_server.private_ip
   ansible.builtin.shell: |
     set -o pipefail
     sudo mkdir -p /opt/neuraldb_enterprise/nomad_data
@@ -96,19 +96,19 @@
     executable: /bin/bash
 
 - name: Start Nomad clients on non-server nodes
-  when: ansible_host != nomad_server_public_ip
+  when: ansible_host_private_ip != nomad_server.private_ip
   block:
     - name: Determine node pool and class for clients
       ansible.builtin.set_fact:
         node_pool: >-
-          {% if ansible_host == web_ingress.public_ip and web_ingress.run_jobs is not defined or web_ingress.run_jobs %}default{% else %}web_ingress{% endif %}
-        node_class: "{{ 'web_ingress' if ansible_host == web_ingress.public_ip else 'default' }}"
+          {% if ansible_host_private_ip == web_ingress.private_ip and web_ingress.run_jobs is not defined or web_ingress.run_jobs %}default{% else %}web_ingress{% endif %}
+        node_class: "{{ 'web_ingress' if ansible_host_private_ip == web_ingress.private_ip else 'default' }}"
 
     - name: Start Nomad client using tmux
       ansible.builtin.shell: |
         set -o pipefail
         tmux has-session -t nomad-agent 2>/dev/null && tmux kill-session -t nomad-agent
-        tmux new-session -d -s nomad-agent 'cd /opt/neuraldb_enterprise; bash nomad/nomad_scripts/start_nomad_agent.sh false true {{ node_pool }} {{ node_class }} {{ nomad_server_private_ip }} {{ ansible_host }} > head.log 2> head.err'
+        tmux new-session -d -s nomad-agent 'cd /opt/neuraldb_enterprise; bash nomad/nomad_scripts/start_nomad_agent.sh false true {{ node_pool }} {{ node_class }} {{ nomad_server.private_ip }} {{ ansible_host_private_ip }} > head.log 2> head.err'
       args:
         executable: /bin/bash
       changed_when: false

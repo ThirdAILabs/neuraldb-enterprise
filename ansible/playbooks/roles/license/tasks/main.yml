@@ -2,28 +2,28 @@
 - name: Copy license file to web ingress server
   ansible.builtin.copy:
     src: "{{ license_path }}"
-    dest: "{{ shared_dir }}/license/ndb_enterprise_license.json"
+    dest: "{{ shared_file_system.shared_dir }}/license/ndb_enterprise_license.json"
     owner: "{{ web_ingress.ssh_username }}"
     group: nomad_nfs
     mode: '0664'
-  when: ansible_host == web_ingress.public_ip
+  when: ansible_host_private_ip == web_ingress.private_ip
 
 - name: Copy license file if it exists
   ansible.builtin.copy:
     src: "{{ airgapped_license_path }}"
-    dest: "{{ shared_dir }}/license/"
+    dest: "{{ shared_file_system.shared_dir }}/license/"
     owner: "{{ web_ingress.ssh_username }}"
     group: nomad_nfs
     mode: '0664'
   when:
     - airgapped_license_path is defined
     - airgapped_license_path | length > 0
-    - ansible_host == web_ingress.public_ip
+    - ansible_host_private_ip == web_ingress.private_ip
 
 - name: Set correct permissions for the license file
   ansible.builtin.file:
-    path: "{{ shared_dir }}/license/ndb_enterprise_license.json"
+    path: "{{ shared_file_system.shared_dir }}/license/ndb_enterprise_license.json"
     mode: '0664'
     owner: "{{ web_ingress.ssh_username }}"
     group: nomad_nfs
-  when: ansible_host == web_ingress.public_ip
+  when: ansible_host_private_ip == web_ingress.private_ip

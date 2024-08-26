@@ -3,7 +3,7 @@
   ansible.builtin.apt:
     name: openssl
     state: present
-  when: ansible_host == web_ingress.public_ip
+  when: ansible_host_private_ip == web_ingress.private_ip
 
 - name: Create certificates directory on the web ingress server
   ansible.builtin.file:
@@ -12,7 +12,7 @@
     owner: root
     group: root
     mode: '0755'
-  when: ansible_host == web_ingress.public_ip
+  when: ansible_host_private_ip == web_ingress.private_ip
 
 - name: Generate SSL certificate using OpenSSL
   ansible.builtin.shell: >
@@ -23,7 +23,7 @@
   args:
     chdir: "/opt/neuraldb_enterprise/certs"
     creates: "/opt/neuraldb_enterprise/certs/traefik.crt"
-  when: ansible_host == web_ingress.public_ip
+  when: ansible_host_private_ip == web_ingress.private_ip
 
 - name: Create certificates.toml file
   ansible.builtin.copy:
@@ -37,4 +37,4 @@
     owner: root
     group: root
     mode: '0644'
-  when: ansible_host == web_ingress.public_ip
+  when: ansible_host_private_ip == web_ingress.private_ip

@@ -8,6 +8,8 @@ genai_key: "open-ai-api-key"
 ndb_enterprise_version: "latest"
 autoscaling_enabled: false
 autoscaler_max_count: 1
+self_hosted_sql_server: true
+create_nfs_server: true
 
 nodes:
   - name: node1
@@ -26,7 +28,6 @@ nodes:
         shared_dir: "/opt/neuraldb_enterprise/model_bazaar"
 
   - name: node2
-    public_ip: "192.168.0.74"
     private_ip: "192.168.0.74"
     ssh_username: "ubuntu"
     ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p ubuntu@54.176.129.2" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'

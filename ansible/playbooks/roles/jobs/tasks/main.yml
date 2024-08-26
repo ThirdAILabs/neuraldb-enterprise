@@ -11,7 +11,7 @@
   register: acl_token
   args:
     executable: /bin/bash
-  when: ansible_host == nomad_server_public_ip
+  when: ansible_host_private_ip == nomad_server.private_ip
   changed_when: false
 
 - name: Start Nomad server on the designated node
@@ -19,14 +19,14 @@
     - name: Determine node pool and class
       ansible.builtin.set_fact:
         node_pool: >-
-          {% if ansible_host == web_ingress.public_ip and web_ingress.run_jobs is not defined or web_ingress.run_jobs %}default{% else %}web_ingress{% endif %}
-        node_class: "{{ 'web_ingress' if ansible_host == web_ingress.public_ip else 'default' }}"
+          {% if ansible_host_private_ip == web_ingress.private_ip and web_ingress.run_jobs is not defined or web_ingress.run_jobs %}default{% else %}web_ingress{% endif %}
+        node_class: "{{ 'web_ingress' if ansible_host_private_ip == web_ingress.private_ip else 'default' }}"
 
 - name: Gather and set common variables on localhost
   ansible.builtin.set_fact:
-    PRIVATE_SERVER_IP: "{{ nomad_server_private_ip }}"
+    PRIVATE_SERVER_IP: "{{ nomad_server.private_ip }}"
     NODE_POOL: "{{ node_pool }}"
-    SHARE_DIR: "{{ shared_dir }}"
+    SHARE_DIR: "{{ shared_file_system.shared_dir }}"
     PUBLIC_SERVER_IP: "{{ web_ingress.public_ip }}"
     JWT_SECRET: "{{ jwt_secret }}"
     ADMIN_USERNAME: "{{ admin_username }}"
@@ -37,11 +37,11 @@
     GENAI_KEY: "{{ genai_key }}"
     NDBE_VERSION: "{{ ndb_enterprise_version }}"
     #TODO(pratik): should be read through sql_uri
-    DATABASE_URI:  "postgresql://modelbazaaruser:{{ sql_server_database_password }}@{{ sql_server_private_ip }}:5432/modelbazaar"
+    DATABASE_URI:  "postgresql://modelbazaaruser:{{ sql_server.database_password }}@{{ sql_server.private_ip }}:5432/modelbazaar"
 
 
 - name: Submit Nomad jobs
-  when: ansible_host == nomad_server_public_ip
+  when: ansible_host_private_ip == nomad_server.private_ip
   block:
     - name: Generate HCL file from template
       ansible.builtin.template:
