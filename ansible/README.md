@@ -13,4 +13,5 @@ This project automates the deployment of ThirdAI Platform using Ansible. The pla
 To deploy ThirdAI Platform, execute the following command:
 
 ```bash
+cd ansible
 ansible-playbook playbooks/test_deploy.yml --extra-vars "config_path=/path/to/your/config.yml"
