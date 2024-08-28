@@ -1,0 +1,64 @@
+- name: Check SSH and Sudo Access
+  ansible.builtin.command: sudo -n echo "Sudo check passed"
+  register: ssh_sudo_result
+  ignore_errors: true
+  failed_when: "'Sudo check passed' not in ssh_sudo_result.stdout"
+  changed_when: false
+  tags: ssh_sudo_access
+
+- name: Verify Internet Access
+  ansible.builtin.command: ping -c 3 www.google.com
+  register: internet_access_result
+  ignore_errors: true
+  failed_when: "'0% packet loss' not in internet_access_result.stdout"
+  changed_when: false
+  tags: internet_access
+
+- name: Check System Resources
+  ansible.builtin.shell: |
+    echo "Memory: $(grep MemTotal /proc/meminfo | awk '{print $2}') kB"
+    echo "CPU Cores: $(nproc)"
+  register: system_resources_result
+  changed_when: false
+  tags: system_resources
+  failed_when: >
+    system_resources_result.stdout_lines[0].split()[1]|int < 8000000 or
+    system_resources_result.stdout_lines[1].split()[2]|int < 1
+
+- name: Verify Ubuntu Version
+  ansible.builtin.command: lsb_release -a
+  register: ubuntu_version_result
+  ignore_errors: true
+  failed_when: "'Ubuntu 22.04' not in ubuntu_version_result.stdout"
+  changed_when: false
+  tags: ubuntu_version
+
+- name: Check Port Exposure
+  ansible.builtin.shell: |
+    for port in 22 80 443 2049 4646 5432; do
+      nc -zv {{ ansible_host }} $port || echo "Port $port closed"
+    done
+  register: port_exposure_result
+  changed_when: false
+  tags: port_exposure
+  failed_when: "'succeeded' in port_exposure_result.stderr"
+
+- name: Write node status to NFS
+  ansible.builtin.shell: |
+    echo "{{ ansible_host }} | success" | sudo tee -a {{ shared_file_system.shared_dir }}/node_status
+  changed_when: false
+  tags: node_status_write
+
+- name: Verify NFS status on all nodes
+  ansible.builtin.shell: |
+    grep -q '{{ ansible_host }} | success' {{ shared_file_system.shared_dir }}/node_status && echo "{{ ansible_host }} | success" || echo "{{ ansible_host }} | failed"
+  register: nfs_status_check
+  failed_when: "'failed' in nfs_status_check.stdout"
+  changed_when: false
+  tags: nfs_status_check
+
+- name: Clean up status file on NFS
+  ansible.builtin.command: sudo rm -f {{ shared_file_system.shared_dir }}/node_status
+  changed_when: true
+  tags: cleanup
+  when: ansible_play_hosts[-1] == ansible_host  # Cleanup only after all nodes are validated

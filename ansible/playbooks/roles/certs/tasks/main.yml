@@ -1,0 +1,40 @@
+---
+- name: Install OpenSSL on the web ingress server
+  ansible.builtin.apt:
+    name: openssl
+    state: present
+  when: ansible_host_private_ip == web_ingress.private_ip
+
+- name: Create certificates directory on the web ingress server
+  ansible.builtin.file:
+    path: "/opt/neuraldb_enterprise/certs"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: ansible_host_private_ip == web_ingress.private_ip
+
+- name: Generate SSL certificate using OpenSSL
+  ansible.builtin.shell: >
+    sudo openssl req -x509 -newkey rsa:4096 -keyout traefik.key
+    -out traefik.crt -days 365 -nodes
+    -subj "/CN=NEURALDB ENTERPRISE CERT"
+    -addext "subjectAltName = IP:{{ web_ingress.public_ip }}"
+  args:
+    chdir: "/opt/neuraldb_enterprise/certs"
+    creates: "/opt/neuraldb_enterprise/certs/traefik.crt"
+  when: ansible_host_private_ip == web_ingress.private_ip
+
+- name: Create certificates.toml file
+  ansible.builtin.copy:
+    content: |
+      [tls.stores]
+        [tls.stores.default]
+          [tls.stores.default.defaultCertificate]
+            certFile = "/certs/traefik.crt"
+            keyFile = "/certs/traefik.key"
+    dest: "/opt/neuraldb_enterprise/certs/certificates.toml"
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_host_private_ip == web_ingress.private_ip
