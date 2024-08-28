@@ -16,7 +16,6 @@
 
 - name: Check System Resources
   ansible.builtin.shell: |
-    set -o pipefail
     echo "Memory: $(grep MemTotal /proc/meminfo | awk '{print $2}') kB"
     echo "CPU Cores: $(nproc)"
   register: system_resources_result
@@ -36,7 +35,6 @@
 
 - name: Check Port Exposure
   ansible.builtin.shell: |
-    set -o pipefail
     for port in 22 80 443 2049 4646 5432; do
       nc -zv {{ ansible_host }} $port || echo "Port $port closed"
     done
@@ -47,14 +45,12 @@
 
 - name: Write node status to NFS
   ansible.builtin.shell: |
-    set -o pipefail
     echo "{{ ansible_host }} | success" | sudo tee -a {{ shared_file_system.shared_dir }}/node_status
   changed_when: false
   tags: node_status_write
 
 - name: Verify NFS status on all nodes
   ansible.builtin.shell: |
-    set -o pipefail
     grep -q '{{ ansible_host }} | success' {{ shared_file_system.shared_dir }}/node_status && echo "{{ ansible_host }} | success" || echo "{{ ansible_host }} | failed"
   register: nfs_status_check
   failed_when: "'failed' in nfs_status_check.stdout"

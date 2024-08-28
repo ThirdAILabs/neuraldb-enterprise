@@ -63,6 +63,11 @@
       when: "'sql_server' in item.roles"
       loop: "{{ nodes }}"
 
+    - name: Initialize nfs_clients and sql_clients variables
+      set_fact:
+        nfs_clients: []
+        sql_clients: []
+
     - name: Set up nfs_clients variable
       set_fact:
         nfs_clients: "{{ nfs_clients | default([]) + [{'private_ip': item.private_ip}] }}"
