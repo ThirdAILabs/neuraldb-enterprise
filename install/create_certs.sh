@@ -11,20 +11,20 @@ $web_ingress_ssh_command <<EOF
     sudo mkdir -p $certs_dir
     cd $certs_dir
 
-    if yum list available openssl11 &> /dev/null
-    then
+    if yum list installed openssl11 &>/dev/null || yum list available openssl11 &>/dev/null; then
         OPENSSL_BIN="sudo openssl11"
         sudo yum install -y openssl11
-    elif yum list available openssl &> /dev/null
-    then
+    elif yum list installed openssl &>/dev/null || yum list available openssl &>/dev/null; then
         OPENSSL_BIN="sudo openssl"
         sudo yum install -y openssl
     else
-        echo "Neither openssl11 nor openssl is available in yum repositories."
+        echo "Neither openssl11 nor openssl is available or installed."
+        exit 1
     fi
+    
     \$OPENSSL_BIN req -x509 -newkey rsa:4096 -keyout traefik.key -out traefik.crt -days 365 -nodes -subj "/CN=NEURALDB ENTERPRISE CERT" -addext "subjectAltName = IP:$web_ingress_public_ip"
 
-    cat <<EOT | sudo tee certificates.toml
+    cat <<'EOT' | sudo tee certificates.toml
 [tls.stores]
   [tls.stores.default]
     [tls.stores.default.defaultCertificate]
@@ -33,7 +33,7 @@ $web_ingress_ssh_command <<EOF
 [http]
   [http.routers]
     [http.routers.nomad]
-      rule = "PathPrefix(`/ui`) || PathPrefix(`/v1`)"
+      rule = "PathPrefix(\`/ui\`) || PathPrefix(\`/v1\`)"
       service = "nomad"
       [http.routers.nomad.middlewares]
         headers = "nomad-headers"
@@ -54,7 +54,7 @@ $web_ingress_ssh_command <<EOF
   [tcp.routers]
     [tcp.routers.nomad-ws]
       entryPoints = ["websecure"]
-      rule = "HostSNI(`*`)"
+      rule = "HostSNI(\`*\`)"
       service = "nomad-ws"
 
   [tcp.services]
@@ -67,7 +67,7 @@ $web_ingress_ssh_command <<EOF
   [websocket.middlewares]
     [websocket.middlewares.nomad-ws]
       [websocket.middlewares.nomad-ws.headers]
-        customRequestHeaders = {"Origin" = "${scheme}://${host}"}
+        customRequestHeaders = {"Origin" = "\${scheme}://\${host}"}
 EOT
 
 EOF
