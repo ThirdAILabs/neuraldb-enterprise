@@ -30,6 +30,44 @@ $web_ingress_ssh_command <<EOF
     [tls.stores.default.defaultCertificate]
       certFile = "/certs/traefik.crt"
       keyFile = "/certs/traefik.key"
+[http]
+  [http.routers]
+    [http.routers.nomad]
+      rule = "PathPrefix(`/ui`) || PathPrefix(`/v1`)"
+      service = "nomad"
+      [http.routers.nomad.middlewares]
+        headers = "nomad-headers"
+
+  [http.services]
+    [http.services.nomad]
+      [http.services.nomad.loadBalancer]
+        passHostHeader = true
+        [[http.services.nomad.loadBalancer.servers]]
+          url = "http://172.17.0.1:4646"
+
+  [http.middlewares]
+    [http.middlewares.nomad-headers]
+      [http.middlewares.nomad-headers.headers]
+        hostsProxyHeaders = ["X-Forwarded-For"]
+
+[tcp]
+  [tcp.routers]
+    [tcp.routers.nomad-ws]
+      entryPoints = ["websecure"]
+      rule = "HostSNI(`*`)"
+      service = "nomad-ws"
+
+  [tcp.services]
+    [tcp.services.nomad-ws]
+      [tcp.services.nomad-ws.loadBalancer]
+        [[tcp.services.nomad-ws.loadBalancer.servers]]
+          address = "172.17.0.1:4646"
+
+[websocket]
+  [websocket.middlewares]
+    [websocket.middlewares.nomad-ws]
+      [websocket.middlewares.nomad-ws.headers]
+        customRequestHeaders = {"Origin" = "${scheme}://${host}"}
 EOT
 
 EOF
