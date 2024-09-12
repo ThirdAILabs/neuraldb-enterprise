@@ -55,12 +55,13 @@ EOF
         GENAI_KEY = "{{ GENAI_KEY }}"
         AWS_ACCESS_KEY = "{{ AWS_ACCESS_KEY }}"
         AWS_ACCESS_SECRET = "{{ AWS_ACCESS_SECRET }}"
+        AWS_SESSION_TOKEN = "{{ AWS_SESSION_TOKEN }}"
 
         TASK_RUNNER_TOKEN = "${TASK_RUNNER_TOKEN}"
       }
 
       config {
-        image = "neuraldbenterprise.azurecr.io/model_bazaar_s3-streaming:latest"
+        image = "neuraldbenterprise.azurecr.io/model_bazaar_s3-streaming:v0.0.16"
         ports = ["modelbazaar-http"]
         group_add = ["4646"]
         auth {

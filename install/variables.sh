@@ -11,6 +11,7 @@ genai_key="open-ai-api-key"
 # S3 bucket support
 aws_access_key="your-aws-iam-access-key"
 aws_access_secret="your-aws-iam-acesss-secret"
+aws_session_token="your-aws-iam-session-token"
 
 # Application autoscaling parameters
 autoscaling_enabled=false
