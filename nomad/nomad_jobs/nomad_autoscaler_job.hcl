@@ -34,6 +34,9 @@ job "autoscaler" {
         data = <<EOF
 nomad {
   address = "http://{{ env "attr.unique.network.ip-address" }}:4646"
+{{- with nomadVar "nomad/jobs" }}
+  token = "{{ .task_runner_token }}"
+{{- end }}
 }
 
 apm "nomad-apm" {
